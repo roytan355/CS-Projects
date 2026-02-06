@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Track your workout progress, log weights, earn badges, watch tutorials, and get personalized nutrition advice with Iron Progress.">
+    <title>Iron Progress - Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+</head>
+
+<body>
+    <!-- App Header -->
+    <header class="app-header">
+        <a href="landing.html" class="nav-logo">🏋️ Iron Progress</a>
+        <div class="app-user" id="app-user">
+            <div class="user-avatar" id="user-avatar">U</div>
+            <span class="user-name" id="user-name">User</span>
+            <button class="btn btn-secondary btn-small" onclick="signOut()">Logout</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Tab Navigation -->
+        <div class="tabs">
+            <button class="tab-button active" data-tab="log">💪 Log</button>
+            <button class="tab-button" data-tab="badges">🏆 Badges</button>
+            <button class="tab-button" data-tab="progress">📊 Progress</button>
+            <button class="tab-button" data-tab="nutrition">🥗 Nutrition</button>
+            <button class="tab-button" data-tab="history">📅 History</button>
+        </div>
+
+        <!-- Tab: Log Workout -->
+        <div id="tab-log" class="tab-content active">
+            <div class="card">
+                <h2>Log Your Lift</h2>
+                <form id="workout-form">
+                    <div class="form-group">
+                        <label for="workout-date">Workout Date</label>
+                        <input type="date" id="workout-date" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="exercise-name">Exercise</label>
+                        <input type="text" id="exercise-name" placeholder="e.g., Bench Press, Squat, Deadlift" required
+                            list="exercise-suggestions">
+                        <datalist id="exercise-suggestions">
+                            <option value="Bench Press">
+                            <option value="Squat">
+                            <option value="Deadlift">
+                            <option value="Overhead Press">
+                            <option value="Barbell Row">
+                            <option value="Pull-ups">
+                            <option value="Dumbbell Curl">
+                            <option value="Tricep Extension">
+                            <option value="Leg Press">
+                            <option value="Lat Pulldown">
+                            <option value="Romanian Deadlift">
+                            <option value="Incline Bench Press">
+                            <option value="Front Squat">
+                            <option value="Dumbbell Press">
+                            <option value="Cable Fly">
+                        </datalist>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="sets">Sets</label>
+                            <input type="number" id="sets" min="1" max="20" placeholder="3" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="reps">Reps</label>
+                            <input type="number" id="reps" min="1" max="100" placeholder="10" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="weight">Weight (lbs)</label>
+                            <input type="number" id="weight" min="0" step="2.5" placeholder="135" required>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <span>✓</span>
+                        <span>Add Exercise</span>
+                    </button>
+                </form>
+
+                <!-- Current Workout Entries -->
+                <div id="current-workout" class="workout-entries hidden">
+                    <h3 class="mt-lg">Today's Workout</h3>
+                    <div id="current-workout-list"></div>
+                    <button id="finish-workout-btn" class="btn btn-success mt-md">
+                        <span>🎯</span>
+                        <span>Finish Workout</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Suggestions Panel -->
+            <div id="suggestions-panel" class="suggestions-panel hidden">
+                <h3>💡 Coach Tips</h3>
+                <div id="suggestions-list"></div>
+            </div>
+        </div>
+
+        <!-- Tab: Badges -->
+        <div id="tab-badges" class="tab-content">
+            <div class="badges-panel">
+                <h2>🏆 Achievement Badges</h2>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--spacing-md);">
+                    Unlock badges by hitting strength milestones. Based on standard strength training benchmarks.
+                </p>
+                <div id="badges-grid" class="badges-grid"></div>
+            </div>
+
+            <!-- Exercise Tutorials Section -->
+            <div id="tutorials-panel" class="card">
+                <h2>🎬 Form Tutorials</h2>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--spacing-lg);">
+                    Learn proper form from the best fitness YouTubers. Select an exercise to see tutorials.
+                </p>
+                <div class="form-group">
+                    <label for="tutorial-exercise-select">Select Exercise</label>
+                    <select id="tutorial-exercise-select" class="btn btn-secondary" style="width: 100%;">
+                        <option value="">Choose an exercise...</option>
+                        <option value="Bench Press">Bench Press</option>
+                        <option value="Squat">Squat</option>
+                        <option value="Deadlift">Deadlift</option>
+                        <option value="Overhead Press">Overhead Press</option>
+                        <option value="Barbell Row">Barbell Row</option>
+                        <option value="Pull-ups">Pull-ups</option>
+                        <option value="Dumbbell Curl">Dumbbell Curl</option>
+                        <option value="Lat Pulldown">Lat Pulldown</option>
+                        <option value="Leg Press">Leg Press</option>
+                    </select>
+                </div>
+                <div id="tutorials-list" class="tutorials-list"></div>
+            </div>
+        </div>
+
+        <!-- Tab: Progress -->
+        <div id="tab-progress" class="tab-content">
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="total-workouts">0</div>
+                    <div class="stat-label">Workouts</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="unique-exercises">0</div>
+                    <div class="stat-label">Exercises</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="total-volume">0</div>
+                    <div class="stat-label">Total Volume</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="badges-earned">0</div>
+                    <div class="stat-label">Badges</div>
+                </div>
+            </div>
+
+            <!-- Chart Controls -->
+            <div class="card">
+                <h2>Weight Progression</h2>
+                <div class="chart-controls">
+                    <select id="exercise-select" class="btn btn-secondary">
+                        <option value="">Select Exercise</option>
+                    </select>
+                    <button class="btn btn-secondary btn-small" data-period="7">7 Days</button>
+                    <button class="btn btn-secondary btn-small" data-period="30">30 Days</button>
+                    <button class="btn btn-secondary btn-small active" data-period="all">All Time</button>
+                </div>
+                <div class="chart-container">
+                    <canvas id="progress-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <div id="progress-empty" class="empty-state">
+                <div class="empty-state-icon">📊</div>
+                <div class="empty-state-text">No workout data yet. Start lifting!</div>
+            </div>
+        </div>
+
+        <!-- Tab: Nutrition -->
+        <div id="tab-nutrition" class="tab-content">
+            <div class="card">
+                <h2>🥗 Nutrition Calculator</h2>
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--spacing-lg);">
+                    Calculate your daily calorie and protein needs based on your stats and goals.
+                </p>
+
+                <form id="nutrition-form">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="user-weight">Weight (lbs)</label>
+                            <input type="number" id="user-weight" min="50" max="500" placeholder="170" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="user-height">Height (inches)</label>
+                            <input type="number" id="user-height" min="48" max="96" placeholder="70" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="user-age">Age</label>
+                            <input type="number" id="user-age" min="13" max="100" placeholder="25" required>
+                        </div>
+                    </div>
+
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="user-gender">Gender</label>
+                            <select id="user-gender" required>
+                                <option value="">Select...</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="activity-level">Activity Level</label>
+                            <select id="activity-level" required>
+                                <option value="">Select...</option>
+                                <option value="sedentary">Sedentary (desk job)</option>
+                                <option value="light">Light (1-2 days/week)</option>
+                                <option value="moderate">Moderate (3-4 days/week)</option>
+                                <option value="active">Active (5-6 days/week)</option>
+                                <option value="very-active">Very Active (daily + physical job)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="fitness-goal">Goal</label>
+                            <select id="fitness-goal" required>
+                                <option value="">Select...</option>
+                                <option value="lose">Lose Fat</option>
+                                <option value="maintain">Maintain Weight</option>
+                                <option value="gain">Build Muscle</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <span>📊</span>
+                        <span>Calculate Nutrition</span>
+                    </button>
+                </form>
+            </div>
+
+            <!-- Nutrition Results -->
+            <div id="nutrition-results" class="hidden">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="daily-calories">0</div>
+                        <div class="stat-label">Daily Calories</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="daily-protein">0g</div>
+                        <div class="stat-label">Protein</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="daily-carbs">0g</div>
+                        <div class="stat-label">Carbs</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="daily-fat">0g</div>
+                        <div class="stat-label">Fat</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>📋 Diet Recommendations</h3>
+                    <div id="diet-tips"></div>
+                </div>
+
+                <div class="card">
+                    <h3>🍽️ Sample Meal Plan</h3>
+                    <div id="meal-plan"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: History -->
+        <div id="tab-history" class="tab-content">
+            <div class="card">
+                <h2>Workout History</h2>
+                <div id="history-list" class="history-list"></div>
+
+                <!-- Empty State -->
+                <div id="history-empty" class="empty-state">
+                    <div class="empty-state-icon">📅</div>
+                    <div class="empty-state-text">No workouts logged yet. Time to hit the gym!</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chatbot -->
+    <button class="chatbot-btn" id="chatbot-btn" onclick="toggleChatbot()">🤖</button>
+
+    <div class="chatbot-window hidden" id="chatbot-window">
+        <div class="chatbot-header">
+            <div class="chatbot-title">🤖 AI Fitness Coach</div>
+            <button class="chatbot-close" onclick="toggleChatbot()">×</button>
+        </div>
+        <div class="chatbot-messages" id="chatbot-messages">
+            <div class="chat-message bot">
+                Hey! I'm your AI fitness coach. Ask me anything about workouts, nutrition, or proper form! 💪
+            </div>
+        </div>
+        <div class="chatbot-input">
+            <input type="text" id="chatbot-input" placeholder="Ask about diet, form, or workouts..."
+                onkeypress="handleChatKeypress(event)">
+            <button onclick="sendChatMessage()">➤</button>
+        </div>
+    </div>
+
+    <script src="auth.js"></script>
+    <script src="app.js"></script>
+    <script src="chatbot.js"></script>
+    <script>
+        // Check auth on load
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = getCurrentUser();
+            if (!user) {
+                window.location.href = 'landing.html';
+                return;
+            }
+
+            // Update user display
+            document.getElementById('user-name').textContent = user.displayName || 'User';
+            document.getElementById('user-avatar').textContent = (user.displayName || 'U')[0].toUpperCase();
+        });
+    </script>
+</body>
+
+</html>
