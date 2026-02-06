@@ -2173,3 +2173,422 @@ input::placeholder {
         height: 60vh;
     }
 }
+
+/* ==========================================
+   RANKING SYSTEM STYLES
+   ========================================== */
+.rank-section {
+    grid-column: 1 / -1;
+    background: linear-gradient(135deg, rgba(255, 77, 77, 0.1) 0%, rgba(255, 140, 0, 0.05) 100%);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-xl);
+    border: 1px solid rgba(255, 77, 77, 0.2);
+    margin-bottom: var(--spacing-lg);
+}
+
+.current-rank {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+}
+
+.rank-icon {
+    font-size: 4rem;
+    animation: rankPulse 2s ease-in-out infinite;
+}
+
+@keyframes rankPulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+.rank-info {
+    flex: 1;
+}
+
+.rank-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.5rem;
+    letter-spacing: 3px;
+    background: var(--gradient-fire);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.rank-stats {
+    color: var(--color-text-secondary);
+    font-size: 0.875rem;
+}
+
+.rank-progress-section {
+    margin-bottom: var(--spacing-lg);
+}
+
+.rank-progress-text {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: var(--color-text-tertiary);
+    margin-bottom: var(--spacing-xs);
+}
+
+.rank-progress-bar {
+    height: 8px;
+    background: var(--color-bg-tertiary);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.rank-progress-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.5s ease;
+}
+
+.rank-max {
+    text-align: center;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.5rem;
+    letter-spacing: 2px;
+    color: var(--color-badge-diamond);
+    margin-bottom: var(--spacing-lg);
+}
+
+.rank-tiers {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--spacing-sm);
+}
+
+.rank-tier {
+    flex: 1;
+    text-align: center;
+    padding: var(--spacing-sm);
+    background: var(--color-bg-tertiary);
+    border-radius: var(--radius-md);
+    font-size: 1.5rem;
+    opacity: 0.4;
+    transition: all var(--transition-normal);
+}
+
+.rank-tier.achieved {
+    opacity: 1;
+    background: var(--color-bg-card);
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+}
+
+/* ==========================================
+   BODY MAP STYLES
+   ========================================== */
+.body-map-section {
+    grid-column: 1 / -1;
+    background: var(--color-bg-card);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-xl);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.body-map-section h3 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.5rem;
+    letter-spacing: 2px;
+    margin-bottom: var(--spacing-md);
+}
+
+.muscle-legend {
+    display: flex;
+    gap: var(--spacing-md);
+    flex-wrap: wrap;
+    margin-bottom: var(--spacing-lg);
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.legend-color {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+}
+
+.legend-label {
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.body-map-container {
+    display: grid;
+    grid-template-columns: 250px 1fr;
+    gap: var(--spacing-xl);
+    align-items: start;
+}
+
+.body-map-svg {
+    width: 100%;
+    max-width: 250px;
+    height: auto;
+}
+
+.muscle-part {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.muscle-part:hover {
+    opacity: 0.8;
+    filter: brightness(1.3);
+    transform-origin: center;
+}
+
+.muscle-stats-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-sm);
+}
+
+.muscle-stat-item {
+    background: var(--color-bg-tertiary);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+}
+
+.muscle-stat-item:hover {
+    background: var(--color-bg-secondary);
+    transform: translateX(4px);
+}
+
+.muscle-stat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2px;
+}
+
+.muscle-name {
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-transform: capitalize;
+}
+
+.muscle-level {
+    font-size: 0.625rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.muscle-stat-details {
+    font-size: 0.75rem;
+    color: var(--color-text-tertiary);
+}
+
+/* ==========================================
+   PREMIUM UI - SMOOTH TRANSITIONS
+   ========================================== */
+
+/* Tab transitions */
+.tab-content {
+    animation: tabFadeIn 0.3s ease-out;
+}
+
+@keyframes tabFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Enhanced tab buttons */
+.tabs {
+    background: linear-gradient(180deg, var(--color-bg-secondary) 0%, transparent 100%);
+    padding: var(--spacing-md);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--spacing-lg);
+    position: relative;
+    overflow: hidden;
+}
+
+.tabs::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--gradient-fire);
+    opacity: 0.5;
+}
+
+.tab-button {
+    position: relative;
+    overflow: hidden;
+    transition: all var(--transition-normal);
+}
+
+.tab-button::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 0;
+    height: 2px;
+    background: var(--gradient-primary);
+    transition: all var(--transition-normal);
+    transform: translateX(-50%);
+}
+
+.tab-button:hover::before,
+.tab-button.active::before {
+    width: 80%;
+}
+
+.tab-button.active {
+    background: linear-gradient(135deg, rgba(255, 77, 77, 0.2) 0%, rgba(255, 140, 0, 0.1) 100%);
+}
+
+/* Card hover effects */
+.card {
+    transition: all var(--transition-normal);
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+/* Stat cards animation */
+.stat-card {
+    animation: statSlideUp 0.4s ease-out backwards;
+}
+
+.stat-card:nth-child(1) {
+    animation-delay: 0.1s;
+}
+
+.stat-card:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.stat-card:nth-child(3) {
+    animation-delay: 0.3s;
+}
+
+.stat-card:nth-child(4) {
+    animation-delay: 0.4s;
+}
+
+@keyframes statSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Button shine effect */
+.btn-primary {
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-primary::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.btn-primary:hover::after {
+    left: 100%;
+}
+
+/* Form input focus animation */
+input:focus,
+select:focus {
+    animation: inputFocus 0.3s ease;
+}
+
+@keyframes inputFocus {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.01);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* Chatbot link styling */
+.chat-message a {
+    color: var(--color-accent-electric);
+    text-decoration: none;
+    word-break: break-all;
+}
+
+.chat-message a:hover {
+    text-decoration: underline;
+}
+
+/* Responsive body map */
+@media (max-width: 768px) {
+    .body-map-container {
+        grid-template-columns: 1fr;
+    }
+
+    .body-map-svg {
+        max-width: 180px;
+        margin: 0 auto;
+    }
+
+    .muscle-stats-list {
+        grid-template-columns: 1fr;
+    }
+
+    .rank-icon {
+        font-size: 3rem;
+    }
+
+    .rank-name {
+        font-size: 1.75rem;
+    }
+
+    .rank-tiers {
+        flex-wrap: wrap;
+    }
+
+    .rank-tier {
+        min-width: 50px;
+    }
+}

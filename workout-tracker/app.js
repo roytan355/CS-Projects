@@ -1145,3 +1145,251 @@ function generateMealPlan(calories, protein, carbs, fat, goal) {
     return planHtml;
 }
 
+// ==========================================
+// OVERALL RANKING SYSTEM
+// ==========================================
+const RANK_TIERS = [
+    { name: 'Beginner', icon: '🆕', minVolume: 0, color: '#808080' },
+    { name: 'Bronze', icon: '🥉', minVolume: 10000, color: '#cd7f32' },
+    { name: 'Silver', icon: '🥈', minVolume: 50000, color: '#c0c0c0' },
+    { name: 'Gold', icon: '🥇', minVolume: 150000, color: '#ffd700' },
+    { name: 'Platinum', icon: '💎', minVolume: 500000, color: '#e5e4e2' },
+    { name: 'Diamond', icon: '👑', minVolume: 1000000, color: '#b9f2ff' }
+];
+
+function calculateOverallRank() {
+    const totalVolume = workoutData.reduce((sum, w) => sum + (w.volume || 0), 0);
+    const totalReps = workoutData.reduce((sum, w) => sum + (w.sets * w.reps), 0);
+
+    // Find current rank
+    let currentRank = RANK_TIERS[0];
+    let nextRank = null;
+
+    for (let i = RANK_TIERS.length - 1; i >= 0; i--) {
+        if (totalVolume >= RANK_TIERS[i].minVolume) {
+            currentRank = RANK_TIERS[i];
+            nextRank = RANK_TIERS[i + 1] || null;
+            break;
+        }
+    }
+
+    // Calculate progress to next rank
+    let progressPercent = 100;
+    let volumeToNext = 0;
+
+    if (nextRank) {
+        const volumeInCurrentTier = totalVolume - currentRank.minVolume;
+        const tierSpan = nextRank.minVolume - currentRank.minVolume;
+        progressPercent = Math.min(100, (volumeInCurrentTier / tierSpan) * 100);
+        volumeToNext = nextRank.minVolume - totalVolume;
+    }
+
+    return {
+        current: currentRank,
+        next: nextRank,
+        totalVolume,
+        totalReps,
+        progressPercent,
+        volumeToNext
+    };
+}
+
+// ==========================================
+// MUSCLE GROUP TRACKING
+// ==========================================
+const MUSCLE_GROUPS = {
+    'chest': ['Bench Press', 'Incline Bench Press', 'Dumbbell Press', 'Cable Fly', 'Push-ups', 'Chest Press'],
+    'back': ['Deadlift', 'Barbell Row', 'Lat Pulldown', 'Pull-ups', 'Seated Row', 'T-Bar Row'],
+    'shoulders': ['Overhead Press', 'Lateral Raise', 'Front Raise', 'Face Pull', 'Shoulder Press'],
+    'biceps': ['Dumbbell Curl', 'Barbell Curl', 'Hammer Curl', 'Preacher Curl', 'Cable Curl'],
+    'triceps': ['Tricep Extension', 'Tricep Pushdown', 'Skull Crushers', 'Dips', 'Close Grip Bench'],
+    'abs': ['Crunches', 'Planks', 'Leg Raises', 'Russian Twists', 'Ab Wheel', 'Cable Crunch'],
+    'quads': ['Squat', 'Front Squat', 'Leg Press', 'Leg Extension', 'Lunges', 'Bulgarian Split Squat'],
+    'hamstrings': ['Romanian Deadlift', 'Leg Curl', 'Good Morning', 'Nordic Curl', 'Stiff Leg Deadlift'],
+    'glutes': ['Hip Thrust', 'Glute Bridge', 'Cable Kickback', 'Squat', 'Lunges', 'Deadlift'],
+    'calves': ['Calf Raise', 'Seated Calf Raise', 'Donkey Calf Raise']
+};
+
+const MUSCLE_LEVELS = [
+    { name: 'Untrained', sessions: 0, color: '#3a3a3a' },
+    { name: 'Beginner', sessions: 1, color: '#ffd700' },
+    { name: 'Intermediate', sessions: 11, color: '#ff8c00' },
+    { name: 'Advanced', sessions: 51, color: '#ff4d4d' },
+    { name: 'Elite', sessions: 101, color: '#9b59b6' }
+];
+
+function getMuscleGroupStats() {
+    const stats = {};
+
+    Object.keys(MUSCLE_GROUPS).forEach(muscle => {
+        const exercises = MUSCLE_GROUPS[muscle];
+        const workouts = workoutData.filter(w =>
+            exercises.some(ex => w.exercise.toLowerCase().includes(ex.toLowerCase()))
+        );
+
+        const sessions = new Set(workouts.map(w => w.date)).size;
+        const totalVolume = workouts.reduce((sum, w) => sum + (w.volume || 0), 0);
+        const totalReps = workouts.reduce((sum, w) => sum + (w.sets * w.reps), 0);
+
+        // Determine level based on sessions
+        let level = MUSCLE_LEVELS[0];
+        for (let i = MUSCLE_LEVELS.length - 1; i >= 0; i--) {
+            if (sessions >= MUSCLE_LEVELS[i].sessions) {
+                level = MUSCLE_LEVELS[i];
+                break;
+            }
+        }
+
+        stats[muscle] = {
+            sessions,
+            totalVolume,
+            totalReps,
+            level
+        };
+    });
+
+    return stats;
+}
+
+function generateBodyMapSVG() {
+    const stats = getMuscleGroupStats();
+
+    return `
+    <svg viewBox="0 0 200 400" class="body-map-svg">
+        <!-- Head -->
+        <circle cx="100" cy="30" r="25" fill="#2a2a2a" stroke="#444" stroke-width="1"/>
+        
+        <!-- Neck -->
+        <rect x="90" y="55" width="20" height="15" fill="#2a2a2a" stroke="#444" stroke-width="1"/>
+        
+        <!-- Shoulders -->
+        <ellipse cx="55" cy="85" rx="20" ry="12" fill="${stats.shoulders.level.color}" class="muscle-part" data-muscle="shoulders"/>
+        <ellipse cx="145" cy="85" rx="20" ry="12" fill="${stats.shoulders.level.color}" class="muscle-part" data-muscle="shoulders"/>
+        
+        <!-- Chest -->
+        <path d="M 60 95 Q 100 85 140 95 Q 140 130 100 135 Q 60 130 60 95" fill="${stats.chest.level.color}" class="muscle-part" data-muscle="chest"/>
+        
+        <!-- Abs -->
+        <rect x="75" y="140" width="50" height="60" rx="5" fill="${stats.abs.level.color}" class="muscle-part" data-muscle="abs"/>
+        
+        <!-- Biceps -->
+        <ellipse cx="40" cy="130" rx="12" ry="25" fill="${stats.biceps.level.color}" class="muscle-part" data-muscle="biceps"/>
+        <ellipse cx="160" cy="130" rx="12" ry="25" fill="${stats.biceps.level.color}" class="muscle-part" data-muscle="biceps"/>
+        
+        <!-- Triceps -->
+        <ellipse cx="35" cy="135" rx="8" ry="20" fill="${stats.triceps.level.color}" class="muscle-part" data-muscle="triceps" opacity="0.8"/>
+        <ellipse cx="165" cy="135" rx="8" ry="20" fill="${stats.triceps.level.color}" class="muscle-part" data-muscle="triceps" opacity="0.8"/>
+        
+        <!-- Forearms -->
+        <ellipse cx="30" cy="175" rx="8" ry="25" fill="#2a2a2a" stroke="#444" stroke-width="1"/>
+        <ellipse cx="170" cy="175" rx="8" ry="25" fill="#2a2a2a" stroke="#444" stroke-width="1"/>
+        
+        <!-- Quads -->
+        <ellipse cx="80" cy="250" rx="18" ry="45" fill="${stats.quads.level.color}" class="muscle-part" data-muscle="quads"/>
+        <ellipse cx="120" cy="250" rx="18" ry="45" fill="${stats.quads.level.color}" class="muscle-part" data-muscle="quads"/>
+        
+        <!-- Hamstrings (visible from front as shadow) -->
+        <ellipse cx="80" cy="260" rx="12" ry="35" fill="${stats.hamstrings.level.color}" class="muscle-part" data-muscle="hamstrings" opacity="0.5"/>
+        <ellipse cx="120" cy="260" rx="12" ry="35" fill="${stats.hamstrings.level.color}" class="muscle-part" data-muscle="hamstrings" opacity="0.5"/>
+        
+        <!-- Glutes -->
+        <ellipse cx="85" cy="210" rx="20" ry="12" fill="${stats.glutes.level.color}" class="muscle-part" data-muscle="glutes"/>
+        <ellipse cx="115" cy="210" rx="20" ry="12" fill="${stats.glutes.level.color}" class="muscle-part" data-muscle="glutes"/>
+        
+        <!-- Calves -->
+        <ellipse cx="75" cy="330" rx="12" ry="30" fill="${stats.calves.level.color}" class="muscle-part" data-muscle="calves"/>
+        <ellipse cx="125" cy="330" rx="12" ry="30" fill="${stats.calves.level.color}" class="muscle-part" data-muscle="calves"/>
+        
+        <!-- Feet -->
+        <ellipse cx="75" cy="375" rx="15" ry="8" fill="#2a2a2a" stroke="#444" stroke-width="1"/>
+        <ellipse cx="125" cy="375" rx="15" ry="8" fill="#2a2a2a" stroke="#444" stroke-width="1"/>
+    </svg>
+    `;
+}
+
+function generateMuscleLegend() {
+    return `
+    <div class="muscle-legend">
+        ${MUSCLE_LEVELS.map(level => `
+            <div class="legend-item">
+                <span class="legend-color" style="background: ${level.color}"></span>
+                <span class="legend-label">${level.name}</span>
+            </div>
+        `).join('')}
+    </div>
+    `;
+}
+
+function generateMuscleStats() {
+    const stats = getMuscleGroupStats();
+
+    return Object.entries(stats).map(([muscle, data]) => `
+        <div class="muscle-stat-item">
+            <div class="muscle-stat-header">
+                <span class="muscle-name">${muscle.charAt(0).toUpperCase() + muscle.slice(1)}</span>
+                <span class="muscle-level" style="color: ${data.level.color}">${data.level.name}</span>
+            </div>
+            <div class="muscle-stat-details">
+                ${data.sessions} sessions • ${formatVolume(data.totalVolume)} volume
+            </div>
+        </div>
+    `).join('');
+}
+
+// Update the badges tab to show new ranking and body map
+function updateBadgesTab() {
+    const badgesGrid = document.getElementById('badges-grid');
+    const rankInfo = calculateOverallRank();
+    const muscleStats = getMuscleGroupStats();
+
+    // Build new badges/ranking display
+    let html = `
+        <!-- Overall Rank Section -->
+        <div class="rank-section">
+            <div class="current-rank">
+                <span class="rank-icon">${rankInfo.current.icon}</span>
+                <div class="rank-info">
+                    <div class="rank-name">${rankInfo.current.name}</div>
+                    <div class="rank-stats">${formatVolume(rankInfo.totalVolume)} lbs lifted • ${rankInfo.totalReps.toLocaleString()} total reps</div>
+                </div>
+            </div>
+            
+            ${rankInfo.next ? `
+            <div class="rank-progress-section">
+                <div class="rank-progress-text">
+                    <span>${Math.round(rankInfo.progressPercent)}% to ${rankInfo.next.name}</span>
+                    <span>${formatVolume(rankInfo.volumeToNext)} lbs to go</span>
+                </div>
+                <div class="rank-progress-bar">
+                    <div class="rank-progress-fill" style="width: ${rankInfo.progressPercent}%; background: linear-gradient(90deg, ${rankInfo.current.color}, ${rankInfo.next.color})"></div>
+                </div>
+            </div>
+            ` : '<div class="rank-max">🏆 Maximum Rank Achieved!</div>'}
+            
+            <div class="rank-tiers">
+                ${RANK_TIERS.map(tier => `
+                    <div class="rank-tier ${rankInfo.totalVolume >= tier.minVolume ? 'achieved' : ''}" title="${tier.name}: ${formatVolume(tier.minVolume)} lbs">
+                        <span>${tier.icon}</span>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+        
+        <!-- Body Map Section -->
+        <div class="body-map-section">
+            <h3>💪 Muscle Development</h3>
+            ${generateMuscleLegend()}
+            <div class="body-map-container">
+                ${generateBodyMapSVG()}
+                <div class="muscle-stats-list">
+                    ${generateMuscleStats()}
+                </div>
+            </div>
+        </div>
+    `;
+
+    badgesGrid.innerHTML = html;
+
+    // Update badges earned count (now shows rank name)
+    document.getElementById('badges-earned').textContent = rankInfo.current.name;
+}
