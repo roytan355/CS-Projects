@@ -701,17 +701,108 @@ function updateHistoryTab() {
         </div>
         <div class="history-exercises">
           ${entries.map(entry => `
-            <div class="exercise-row">
+            <div class="exercise-row" data-id="${entry.id}">
               <strong>${entry.exercise}</strong>
               <span>${entry.sets} sets</span>
               <span>${entry.reps} reps</span>
               <span>${entry.weight} lbs</span>
+              <div class="exercise-actions">
+                <button class="btn-icon" onclick="editWorkoutEntry(${entry.id})" title="Edit">✏️</button>
+                <button class="btn-icon btn-danger-icon" onclick="deleteWorkoutEntry(${entry.id})" title="Delete">🗑️</button>
+              </div>
             </div>
           `).join('')}
         </div>
       </div>
     `;
     }).join('');
+}
+
+// Edit workout entry
+function editWorkoutEntry(id) {
+    const entry = workoutData.find(w => w.id === id);
+    if (!entry) return;
+
+    // Create and show edit modal
+    const modal = document.createElement('div');
+    modal.className = 'edit-modal';
+    modal.id = 'edit-modal';
+    modal.innerHTML = `
+        <div class="edit-modal-content">
+            <h3>Edit Workout Entry</h3>
+            <div class="form-group">
+                <label>Exercise</label>
+                <input type="text" id="edit-exercise" value="${entry.exercise}">
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Sets</label>
+                    <input type="number" id="edit-sets" value="${entry.sets}" min="1">
+                </div>
+                <div class="form-group">
+                    <label>Reps</label>
+                    <input type="number" id="edit-reps" value="${entry.reps}" min="1">
+                </div>
+                <div class="form-group">
+                    <label>Weight (lbs)</label>
+                    <input type="number" id="edit-weight" value="${entry.weight}" min="0" step="2.5">
+                </div>
+            </div>
+            <div class="edit-modal-actions">
+                <button class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveWorkoutEdit(${id})">Save Changes</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Focus first input
+    setTimeout(() => document.getElementById('edit-exercise').focus(), 100);
+}
+
+function saveWorkoutEdit(id) {
+    const exercise = document.getElementById('edit-exercise').value.trim();
+    const sets = parseInt(document.getElementById('edit-sets').value);
+    const reps = parseInt(document.getElementById('edit-reps').value);
+    const weight = parseFloat(document.getElementById('edit-weight').value);
+
+    if (!exercise || !sets || !reps || weight < 0) {
+        showNotification('Please fill all fields correctly', false);
+        return;
+    }
+
+    // Find and update entry
+    const index = workoutData.findIndex(w => w.id === id);
+    if (index !== -1) {
+        workoutData[index].exercise = exercise;
+        workoutData[index].sets = sets;
+        workoutData[index].reps = reps;
+        workoutData[index].weight = weight;
+        workoutData[index].volume = sets * reps * weight;
+
+        saveData();
+        updateUI();
+        showNotification('Workout entry updated! ✏️', false);
+    }
+
+    closeEditModal();
+}
+
+function closeEditModal() {
+    const modal = document.getElementById('edit-modal');
+    if (modal) modal.remove();
+}
+
+// Delete workout entry
+function deleteWorkoutEntry(id) {
+    if (!confirm('Delete this workout entry?')) return;
+
+    workoutData = workoutData.filter(w => w.id !== id);
+    saveData();
+    updateUI();
+    updateHistoryTab();
+    showNotification('Entry deleted', false);
 }
 
 // ==========================================
