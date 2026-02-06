@@ -3,8 +3,8 @@
 // ==========================================
 
 // Gemini API configuration (set your API key here)
-const GEMINI_API_KEY = 'AIzaSyBWPjIDPSM1WoVnflmBmkSMcGLdH8kddk0'; // Add your Gemini API key here
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
+const GEMINI_API_KEY = 'AIzaSyBWPjIDPSM1WoVnflmBmkSMcGLdH8kddk0';
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
 
 // Demo mode - uses smart pre-built responses when API key is not set
 const CHATBOT_DEMO_MODE = !GEMINI_API_KEY;
