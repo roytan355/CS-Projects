@@ -467,8 +467,13 @@
         }
 
         function logout() {
-            localStorage.removeItem('ironProgressUser');
-            window.location.href = 'landing.html';
+            // Use signOut from auth.js to properly handle Firebase logout
+            if (typeof signOut === 'function') {
+                signOut();
+            } else {
+                localStorage.removeItem('ironProgressUser');
+                window.location.href = 'landing.html';
+            }
         }
 
         document.addEventListener('DOMContentLoaded', loadProfile);
