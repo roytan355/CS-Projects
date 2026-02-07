@@ -204,7 +204,12 @@ def main():
     )
     
     st.sidebar.divider()
-    st.sidebar.header("💰 Financial Information")
+    st.sidebar.header("�️ Insurance Types")
+    include_life = st.sidebar.checkbox("Life Insurance", value=True)
+    include_disability = st.sidebar.checkbox("Disability Insurance", value=True)
+    
+    st.sidebar.divider()
+    st.sidebar.header("�💰 Financial Information")
     
     annual_income = st.sidebar.number_input(
         "Annual Income ($)", 
@@ -318,69 +323,99 @@ def main():
     risk_score = calculate_risk_score(income_dep, liabilities, dependents, coverage_gaps, health_trigger, risk_weights)
     risk_category, risk_class, risk_emoji = get_risk_category(risk_score)
     
-    life_coverage = calculate_life_coverage(annual_income, total_liabilities, existing_coverage)
-    disability_coverage = calculate_disability_coverage(annual_income)
+    # Calculate based on selected insurance types
+    life_coverage = 0
+    life_premium = 0
+    disability_coverage = 0
+    disability_low_premium = 0
+    disability_high_premium = 0
     
-    life_premium = calculate_life_premium(life_coverage, age, is_smoker, life_base_rate, age_increment, smoker_multiplier)
-    disability_low_premium, disability_high_premium = calculate_disability_premium(
-        annual_income, risk_score, OCCUPATION_MULTIPLIERS[occupation], disability_low_rate, disability_high_rate
-    )
+    if include_life:
+        life_coverage = calculate_life_coverage(annual_income, total_liabilities, existing_coverage)
+        life_premium = calculate_life_premium(life_coverage, age, is_smoker, life_base_rate, age_increment, smoker_multiplier)
+    
+    if include_disability:
+        disability_coverage = calculate_disability_coverage(annual_income)
+        disability_low_premium, disability_high_premium = calculate_disability_premium(
+            annual_income, risk_score, OCCUPATION_MULTIPLIERS[occupation], disability_low_rate, disability_high_rate
+        )
     
     # Results Display
     st.divider()
     st.header("📈 Results Summary")
     
-    # Metrics Row
-    metric_cols = st.columns(4)
-    
-    with metric_cols[0]:
-        st.metric(
-            label="Total Risk Score",
-            value=f"{risk_score:.0f}/100",
-            delta=f"{risk_emoji} {risk_category}"
-        )
-    
-    with metric_cols[1]:
-        st.metric(
-            label="Life Coverage Needed",
-            value=f"${life_coverage:,.0f}"
-        )
-    
-    with metric_cols[2]:
-        st.metric(
-            label="Disability Coverage",
-            value=f"${disability_coverage:,.0f}/yr"
-        )
-    
-    with metric_cols[3]:
+    if not include_life and not include_disability:
+        st.warning("⚠️ Please select at least one insurance type from the sidebar.")
+    else:
+        # Metrics Row - dynamic based on selection
+        num_cols = 1 + (1 if include_life else 0) + (1 if include_disability else 0) + 1
+        metric_cols = st.columns(num_cols)
+        col_idx = 0
+        
+        with metric_cols[col_idx]:
+            st.metric(
+                label="Total Risk Score",
+                value=f"{risk_score:.0f}/100",
+                delta=f"{risk_emoji} {risk_category}"
+            )
+        col_idx += 1
+        
+        if include_life:
+            with metric_cols[col_idx]:
+                st.metric(
+                    label="Life Coverage Needed",
+                    value=f"${life_coverage:,.0f}"
+                )
+            col_idx += 1
+        
+        if include_disability:
+            with metric_cols[col_idx]:
+                st.metric(
+                    label="Disability Coverage",
+                    value=f"${disability_coverage:,.0f}/yr"
+                )
+            col_idx += 1
+        
+        # Calculate total premium
         total_premium = life_premium + (disability_low_premium + disability_high_premium) / 2
-        st.metric(
-            label="Est. Total Annual Premium",
-            value=f"${total_premium:,.0f}"
-        )
-    
-    # Detailed breakdown
-    st.divider()
-    detail_cols = st.columns(2)
-    
-    with detail_cols[0]:
-        st.subheader("🏥 Life Insurance (Term 20)")
-        st.write(f"**Recommended Coverage:** ${life_coverage:,.0f}")
-        st.write(f"**Base Rate:** ${life_base_rate:.0f} per $1,000")
-        if is_smoker:
-            st.write(f"**Smoker Penalty:** {smoker_multiplier}x applied ⚠️")
-        if age > 30:
-            age_factor = (1 + age_increment) ** (age - 30)
-            st.write(f"**Age Adjustment:** {age_factor:.0f}x (age {age})")
-        st.write(f"**Estimated Annual Premium:** ${life_premium:,.0f}")
-    
-    with detail_cols[1]:
-        st.subheader("🩺 Disability Insurance")
-        st.write(f"**Income Replacement (70%):** ${disability_coverage:,.0f}/year")
-        st.write(f"**Occupation Class:** {occupation}")
-        st.write(f"**Premium Range:** ${disability_low_premium:,.0f} - ${disability_high_premium:,.0f}/year")
-        avg_disability = (disability_low_premium + disability_high_premium) / 2
-        st.write(f"**Estimated Annual Premium:** ${avg_disability:,.0f}")
+        with metric_cols[col_idx]:
+            st.metric(
+                label="Est. Total Annual Premium",
+                value=f"${total_premium:,.0f}"
+            )
+        
+        # Detailed breakdown
+        st.divider()
+        
+        if include_life and include_disability:
+            detail_cols = st.columns(2)
+            life_col = detail_cols[0]
+            disability_col = detail_cols[1]
+        elif include_life:
+            life_col = st.container()
+        else:
+            disability_col = st.container()
+        
+        if include_life:
+            with life_col:
+                st.subheader("🏥 Life Insurance (Term 20)")
+                st.write(f"**Recommended Coverage:** ${life_coverage:,.0f}")
+                st.write(f"**Base Rate:** ${life_base_rate:.0f} per $1,000")
+                if is_smoker:
+                    st.write(f"**Smoker Penalty:** {smoker_multiplier}x applied ⚠️")
+                if age > 30:
+                    age_factor = (1 + age_increment) ** (age - 30)
+                    st.write(f"**Age Adjustment:** {age_factor:.0f}x (age {age})")
+                st.write(f"**Estimated Annual Premium:** ${life_premium:,.0f}")
+        
+        if include_disability:
+            with disability_col:
+                st.subheader("🩺 Disability Insurance")
+                st.write(f"**Income Replacement (70%):** ${disability_coverage:,.0f}/year")
+                st.write(f"**Occupation Class:** {occupation}")
+                st.write(f"**Premium Range:** ${disability_low_premium:,.0f} - ${disability_high_premium:,.0f}/year")
+                avg_disability = (disability_low_premium + disability_high_premium) / 2
+                st.write(f"**Estimated Annual Premium:** ${avg_disability:,.0f}")
     
     # Visualization
     st.divider()
