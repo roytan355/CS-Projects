@@ -442,7 +442,12 @@
         }
 
         function saveProfile() {
+            // Get existing profile to preserve avatarUrl
+            const profileKey = getUserStorageKey('userProfile');
+            const existingProfile = JSON.parse(localStorage.getItem(profileKey) || '{}');
+
             const profile = {
+                ...existingProfile, // Preserve existing data like avatarUrl
                 heightFt: parseInt(document.getElementById('height-ft').value) || null,
                 heightIn: parseInt(document.getElementById('height-in').value) || null,
                 bodyWeight: parseFloat(document.getElementById('body-weight').value) || null,
@@ -451,7 +456,7 @@
                 restDays: parseInt(document.getElementById('rest-days').value)
             };
 
-            localStorage.setItem(getUserStorageKey('userProfile'), JSON.stringify(profile));
+            localStorage.setItem(profileKey, JSON.stringify(profile));
 
             // Show toast
             const toast = document.createElement('div');
