@@ -366,12 +366,12 @@ def main():
     with detail_cols[0]:
         st.subheader("🏥 Life Insurance (Term 20)")
         st.write(f"**Recommended Coverage:** ${life_coverage:,.0f}")
-        st.write(f"**Base Rate:** ${life_base_rate:.2f} per $1,000")
+        st.write(f"**Base Rate:** ${life_base_rate:.0f} per $1,000")
         if is_smoker:
             st.write(f"**Smoker Penalty:** {smoker_multiplier}x applied ⚠️")
         if age > 30:
             age_factor = (1 + age_increment) ** (age - 30)
-            st.write(f"**Age Adjustment:** {age_factor:.2f}x (age {age})")
+            st.write(f"**Age Adjustment:** {age_factor:.0f}x (age {age})")
         st.write(f"**Estimated Annual Premium:** ${life_premium:,.0f}")
     
     with detail_cols[1]:
