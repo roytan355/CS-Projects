@@ -322,12 +322,22 @@ function initializeForm() {
         weightTypeSelect.addEventListener('change', (e) => {
             if (e.target.value === 'bodyweight') {
                 weightLabel.textContent = 'Your Body Weight (lbs)';
-                weightInput.placeholder = '150';
                 weightContainer.style.borderLeft = '3px solid #a855f7';
                 weightContainer.style.paddingLeft = '12px';
+
+                // Auto-fill saved body weight from profile
+                const profileKey = getUserStorageKey('userProfile');
+                const profile = JSON.parse(localStorage.getItem(profileKey) || '{}');
+                if (profile.bodyWeight) {
+                    weightInput.value = profile.bodyWeight;
+                    weightInput.placeholder = profile.bodyWeight;
+                } else {
+                    weightInput.placeholder = '150 (set in Profile)';
+                }
             } else {
                 weightLabel.textContent = 'Weight (lbs)';
                 weightInput.placeholder = '135';
+                weightInput.value = '';
                 weightContainer.style.borderLeft = 'none';
                 weightContainer.style.paddingLeft = '0';
             }
