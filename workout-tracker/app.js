@@ -1485,6 +1485,7 @@ const MUSCLE_LEVELS = [
 function getMuscleGroupStats() {
     const stats = {};
 
+    // First, handle predefined exercise mappings
     Object.keys(MUSCLE_GROUPS).forEach(muscle => {
         const exercises = MUSCLE_GROUPS[muscle];
         const workouts = workoutData.filter(w =>
@@ -1510,6 +1511,56 @@ function getMuscleGroupStats() {
             totalReps,
             level
         };
+    });
+
+    // Then, add custom exercises via AI detection
+    const allExercises = [...new Set(workoutData.map(w => w.exercise))];
+    const predefinedExercises = Object.values(MUSCLE_GROUPS).flat().map(e => e.toLowerCase());
+
+    allExercises.forEach(exercise => {
+        // Skip if already counted in predefined mapping
+        const isAlreadyCounted = predefinedExercises.some(ex =>
+            exercise.toLowerCase().includes(ex.toLowerCase()) || ex.includes(exercise.toLowerCase())
+        );
+
+        if (!isAlreadyCounted) {
+            // Use AI detection for custom exercises
+            const detectedGroup = detectMuscleGroup(exercise);
+
+            // Map AI muscle groups to body map groups
+            const muscleMapping = {
+                'chest': 'chest',
+                'biceps': 'biceps',
+                'triceps': 'triceps',
+                'shoulders': 'shoulders',
+                'back': 'back',
+                'legs': 'quads',
+                'core': 'abs',
+                'posterior': 'hamstrings',
+                'general': null // Skip general
+            };
+
+            const bodyMapMuscle = muscleMapping[detectedGroup.group];
+            if (bodyMapMuscle && stats[bodyMapMuscle]) {
+                const customWorkouts = workoutData.filter(w => w.exercise === exercise);
+                const customSessions = new Set(customWorkouts.map(w => w.date)).size;
+                const customVolume = customWorkouts.reduce((sum, w) => sum + (w.volume || 0), 0);
+                const customReps = customWorkouts.reduce((sum, w) => sum + (w.sets * w.reps), 0);
+
+                // Add to existing stats
+                stats[bodyMapMuscle].sessions += customSessions;
+                stats[bodyMapMuscle].totalVolume += customVolume;
+                stats[bodyMapMuscle].totalReps += customReps;
+
+                // Recalculate level
+                for (let i = MUSCLE_LEVELS.length - 1; i >= 0; i--) {
+                    if (stats[bodyMapMuscle].sessions >= MUSCLE_LEVELS[i].sessions) {
+                        stats[bodyMapMuscle].level = MUSCLE_LEVELS[i];
+                        break;
+                    }
+                }
+            }
+        }
     });
 
     return stats;
