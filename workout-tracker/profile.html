@@ -82,9 +82,27 @@
             opacity: 1;
         }
 
-        .profile-name {
+        .editable-name {
             font-size: 1.5rem;
             font-weight: 600;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: #fff;
+            text-align: center;
+            width: 100%;
+            max-width: 300px;
+            padding: 4px 8px;
+            transition: border-color 0.2s;
+        }
+
+        .editable-name:hover {
+            border-bottom-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .editable-name:focus {
+            outline: none;
+            border-bottom-color: #667eea;
         }
 
         .profile-email {
@@ -271,7 +289,7 @@
             </div>
             <input type="file" id="avatar-upload" accept="image/*" style="display: none;"
                 onchange="uploadAvatar(event)">
-            <div class="profile-name" id="profile-name">User</div>
+            <input type="text" id="profile-name" class="editable-name" placeholder="Your Name" onchange="saveName()">
             <div class="profile-email" id="profile-email">user@example.com</div>
         </div>
 
@@ -375,15 +393,18 @@
                 return;
             }
 
-            // Set user info
-            document.getElementById('profile-name').textContent = user.displayName || 'User';
-            document.getElementById('profile-email').textContent = user.email || '';
-            document.getElementById('avatar-letter').textContent = (user.displayName || 'U')[0].toUpperCase();
-
-            // Load saved profile
+            // Load saved profile first to get custom name
             const stored = localStorage.getItem(getUserStorageKey('userProfile'));
+            const profile = stored ? JSON.parse(stored) : {};
+
+            // Set user info - use custom name if saved, otherwise use auth displayName
+            const displayName = profile.displayName || user.displayName || 'User';
+            document.getElementById('profile-name').value = displayName;
+            document.getElementById('profile-email').textContent = user.email || '';
+            document.getElementById('avatar-letter').textContent = displayName[0].toUpperCase();
+
+            // Load other profile settings
             if (stored) {
-                const profile = JSON.parse(stored);
                 document.getElementById('height-ft').value = profile.heightFt || '';
                 document.getElementById('height-in').value = profile.heightIn || '';
                 document.getElementById('body-weight').value = profile.bodyWeight || '';
@@ -397,6 +418,27 @@
                     avatar.innerHTML = `<img src="${profile.avatarUrl}" alt="Profile"><div class="profile-avatar-overlay">📷 Change</div>`;
                 }
             }
+        }
+
+        function saveName() {
+            const newName = document.getElementById('profile-name').value.trim();
+            if (!newName) return;
+
+            // Update avatar letter
+            document.getElementById('avatar-letter').textContent = newName[0].toUpperCase();
+
+            // Save to profile
+            const profileKey = getUserStorageKey('userProfile');
+            const profile = JSON.parse(localStorage.getItem(profileKey) || '{}');
+            profile.displayName = newName;
+            localStorage.setItem(profileKey, JSON.stringify(profile));
+
+            // Show toast
+            const toast = document.createElement('div');
+            toast.className = 'saved-toast';
+            toast.textContent = '✓ Name Updated!';
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2000);
         }
 
         function uploadAvatar(event) {
