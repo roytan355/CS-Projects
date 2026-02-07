@@ -289,7 +289,8 @@
             </div>
             <input type="file" id="avatar-upload" accept="image/*" style="display: none;"
                 onchange="uploadAvatar(event)">
-            <input type="text" id="profile-name" class="editable-name" placeholder="Your Name" onchange="saveName()">
+            <input type="text" id="profile-name" class="editable-name" placeholder="Your Name" onchange="saveName()"
+                onblur="saveName()" onkeydown="if(event.key==='Enter'){saveName();this.blur();}">
             <div class="profile-email" id="profile-email">user@example.com</div>
         </div>
 
