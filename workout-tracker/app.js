@@ -89,11 +89,101 @@ const GENERIC_MILESTONES = [
 ];
 
 // ==========================================
+// MUSCLE GROUP DETECTION (AI-like matching)
+// ==========================================
+const MUSCLE_GROUP_MAP = {
+    chest: {
+        keywords: ['push', 'bench', 'chest', 'fly', 'pec', 'dip', 'cable cross'],
+        emoji: '💪',
+        thresholds: [50, 95, 135, 185, 225]
+    },
+    biceps: {
+        keywords: ['curl', 'bicep', 'preacher', 'hammer', 'concentration'],
+        emoji: '💪',
+        thresholds: [20, 30, 40, 50, 60]
+    },
+    triceps: {
+        keywords: ['tricep', 'extension', 'pushdown', 'skull', 'kickback', 'dip'],
+        emoji: '💪',
+        thresholds: [30, 50, 70, 90, 110]
+    },
+    shoulders: {
+        keywords: ['shoulder', 'delt', 'lateral', 'front raise', 'rear', 'military', 'overhead press', 'ohp'],
+        emoji: '🏋️',
+        thresholds: [45, 65, 95, 115, 135]
+    },
+    back: {
+        keywords: ['row', 'lat', 'pull', 'back', 'chin', 'pulldown', 'pullup', 'shrug'],
+        emoji: '🔙',
+        thresholds: [70, 115, 155, 185, 225]
+    },
+    legs: {
+        keywords: ['squat', 'leg', 'lunge', 'calf', 'quad', 'hamstring', 'glute', 'step'],
+        emoji: '🦵',
+        thresholds: [95, 155, 225, 315, 405]
+    },
+    core: {
+        keywords: ['ab', 'crunch', 'plank', 'core', 'twist', 'situp', 'sit-up'],
+        emoji: '🎯',
+        thresholds: [0, 25, 50, 75, 100] // Lower thresholds for ab exercises
+    },
+    posterior: {
+        keywords: ['deadlift', 'hip', 'rdl', 'romanian', 'good morning', 'hyperextension'],
+        emoji: '🔥',
+        thresholds: [115, 185, 265, 345, 405]
+    }
+};
+
+// Detect muscle group from exercise name
+function detectMuscleGroup(exerciseName) {
+    const lowerName = exerciseName.toLowerCase();
+
+    for (const [group, data] of Object.entries(MUSCLE_GROUP_MAP)) {
+        for (const keyword of data.keywords) {
+            if (lowerName.includes(keyword)) {
+                return {
+                    group: group,
+                    displayName: group.charAt(0).toUpperCase() + group.slice(1),
+                    emoji: data.emoji,
+                    thresholds: data.thresholds
+                };
+            }
+        }
+    }
+
+    // Default to general if no match
+    return {
+        group: 'general',
+        displayName: 'General',
+        emoji: '🏋️',
+        thresholds: [25, 50, 75, 100, 150]
+    };
+}
+
+// Generate dynamic badge milestones for custom exercise
+function generateDynamicMilestones(exerciseName, muscleGroup) {
+    const tiers = ['bronze', 'silver', 'gold', 'platinum', 'diamond'];
+    const icons = ['🥉', '🥈', '🥇', '💎', '👑'];
+    const tierNames = ['Beginner', 'Rising', 'Strong', 'Advanced', 'Elite'];
+
+    return muscleGroup.thresholds.map((weight, index) => ({
+        weight: weight,
+        name: `${tierNames[index]} ${exerciseName}`,
+        tier: tiers[index],
+        icon: icons[index],
+        description: `${exerciseName} ${weight} lbs`,
+        muscleGroup: muscleGroup.group,
+        isDynamic: true
+    }));
+}
+
+// ==========================================
 // STATE MANAGEMENT
 // ==========================================
 let workoutData = [];
 let currentWorkout = [];
 let unlockedBadges = [];
+let customExerciseBadges = {}; // Store dynamic badges for custom exercises
 let chart = null;
 
 // ==========================================
@@ -200,6 +290,8 @@ function switchTab(tabName) {
 function initializeForm() {
     const form = document.getElementById('workout-form');
     const finishBtn = document.getElementById('finish-workout-btn');
+    const exerciseInput = document.getElementById('exercise-name');
+    const muscleIndicator = document.getElementById('muscle-group-indicator');
 
     form.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -207,6 +299,17 @@ function initializeForm() {
     });
 
     finishBtn.addEventListener('click', finishWorkout);
+
+    // Real-time muscle group detection
+    exerciseInput.addEventListener('input', (e) => {
+        const exerciseName = e.target.value.trim();
+        if (exerciseName.length > 2) {
+            const muscleGroup = detectMuscleGroup(exerciseName);
+            muscleIndicator.innerHTML = `${muscleGroup.emoji} Detected: <strong>${muscleGroup.displayName}</strong>`;
+        } else {
+            muscleIndicator.innerHTML = '';
+        }
+    });
 }
 
 function setDefaultDate() {
@@ -326,6 +429,7 @@ function checkForNewBadges(exercise, weight) {
     const milestones = BADGE_MILESTONES[exercise];
 
     if (milestones) {
+        // Use predefined milestones for known exercises
         milestones.forEach(milestone => {
             if (weight >= milestone.weight) {
                 const badgeId = `${exercise}-${milestone.tier}`;
@@ -336,24 +440,32 @@ function checkForNewBadges(exercise, weight) {
             }
         });
     } else {
-        // For exercises without predefined milestones, use generic ones
-        const firstWeight = getFirstWeightForExercise(exercise);
-        if (firstWeight) {
-            GENERIC_MILESTONES.forEach((milestone, index) => {
-                const targetWeight = Math.round(firstWeight * milestone.weightMultiplier);
-                if (weight >= targetWeight) {
-                    const badgeId = `${exercise}-generic-${index}`;
-                    if (!unlockedBadges.includes(badgeId)) {
-                        unlockedBadges.push(badgeId);
-                        newBadges.push({
-                            ...milestone,
-                            name: `${exercise} ${milestone.name}`,
-                            description: `${exercise} at ${targetWeight}+ lbs`
-                        });
-                    }
-                }
-            });
+        // AI-based muscle group detection for custom exercises
+        const muscleGroup = detectMuscleGroup(exercise);
+        const dynamicMilestones = generateDynamicMilestones(exercise, muscleGroup);
+
+        // Store dynamic milestones for this exercise
+        if (!customExerciseBadges[exercise]) {
+            customExerciseBadges[exercise] = {
+                muscleGroup: muscleGroup,
+                milestones: dynamicMilestones
+            };
         }
+
+        dynamicMilestones.forEach((milestone, index) => {
+            if (weight >= milestone.weight) {
+                const badgeId = `${exercise}-dynamic-${index}`;
+                if (!unlockedBadges.includes(badgeId)) {
+                    unlockedBadges.push(badgeId);
+                    newBadges.push({
+                        ...milestone,
+                        exerciseName: exercise,
+                        muscleGroupEmoji: muscleGroup.emoji,
+                        muscleGroupName: muscleGroup.displayName
+                    });
+                }
+            }
+        });
     }
 
     if (newBadges.length > 0) {
@@ -408,6 +520,43 @@ function updateBadgesTab() {
       `;
         });
     });
+
+    // Show custom exercise badges (AI-detected)
+    const customExercises = usedExercises.filter(ex => !BADGE_MILESTONES[ex]);
+    if (customExercises.length > 0) {
+        badgesHTML += `<div style="grid-column: 1/-1; margin-top: var(--spacing-lg); padding-top: var(--spacing-md); border-top: 1px solid var(--color-border);">
+            <h3 style="color: var(--color-text-primary); margin-bottom: var(--spacing-md);">🤖 Custom Exercises (AI Detected)</h3>
+        </div>`;
+
+        customExercises.forEach(exercise => {
+            const muscleGroup = detectMuscleGroup(exercise);
+            const maxWeight = workoutData
+                .filter(w => w.exercise === exercise)
+                .reduce((max, w) => Math.max(max, w.weight), 0);
+
+            const dynamicMilestones = generateDynamicMilestones(exercise, muscleGroup);
+
+            // Add muscle group label
+            badgesHTML += `<div style="grid-column: 1/-1; font-size: 0.75rem; color: var(--color-accent-primary); margin-top: var(--spacing-sm);">
+                ${muscleGroup.emoji} ${exercise} → ${muscleGroup.displayName}
+            </div>`;
+
+            dynamicMilestones.forEach((milestone, index) => {
+                const badgeId = `${exercise}-dynamic-${index}`;
+                const isUnlocked = unlockedBadges.includes(badgeId);
+                const progress = maxWeight > 0 ? Math.min(100, (maxWeight / milestone.weight) * 100) : 0;
+
+                badgesHTML += `
+            <div class="badge-item tier-${milestone.tier} ${isUnlocked ? 'unlocked' : 'locked'}">
+              <span class="badge-icon">${milestone.icon}</span>
+              <div class="badge-name">${milestone.name}</div>
+              <div class="badge-requirement">${milestone.description}</div>
+              ${!isUnlocked && progress > 0 ? `<div style="font-size: 0.625rem; color: var(--color-accent-primary); margin-top: 4px;">${Math.round(progress)}%</div>` : ''}
+            </div>
+          `;
+            });
+        });
+    }
 
     badgesGrid.innerHTML = badgesHTML || '<p style="color: var(--color-text-tertiary); text-align: center; grid-column: 1/-1;">Start logging workouts to see available badges!</p>';
 
