@@ -21,7 +21,7 @@ from datetime import datetime
 # ==========================================
 st.set_page_config(
     page_title="Insurance Needs Estimator",
-    page_icon="🛡️",
+    page_icon="✅",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -175,7 +175,7 @@ def calculate_disability_premium(annual_income, risk_score, occupation_multiplie
 
 def main():
     # Header
-    st.markdown('<h1 class="main-header">🛡️ Insurance Needs & Premium Estimator</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 class="main-header">✅ Insurance Needs & Premium Estimator</h1>', unsafe_allow_html=True)
     st.markdown('<p class="sub-header">Ontario-Based Actuarial Calculator for Business Case Analysis</p>', unsafe_allow_html=True)
     
     # Live status indicator
@@ -204,12 +204,12 @@ def main():
     )
     
     st.sidebar.divider()
-    st.sidebar.header("�️ Insurance Types")
+    st.sidebar.header("✅ Insurance Types")
     include_life = st.sidebar.checkbox("Life Insurance", value=True)
     include_disability = st.sidebar.checkbox("Disability Insurance", value=True)
     
     st.sidebar.divider()
-    st.sidebar.header("�💰 Financial Information")
+    st.sidebar.header("� Financial Information")
     
     annual_income = st.sidebar.number_input(
         "Annual Income ($)", 
