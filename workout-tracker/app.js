@@ -315,19 +315,20 @@ function initializeForm() {
     const weightTypeSelect = document.getElementById('weight-type');
     const weightContainer = document.getElementById('weight-container');
     const weightInput = document.getElementById('weight');
+    const weightLabel = weightContainer?.querySelector('label');
 
-    if (weightTypeSelect) {
+    if (weightTypeSelect && weightLabel) {
         weightTypeSelect.addEventListener('change', (e) => {
             if (e.target.value === 'bodyweight') {
-                weightContainer.style.opacity = '0.5';
-                weightInput.value = 0;
-                weightInput.disabled = true;
-                weightInput.required = false;
+                weightLabel.textContent = 'Your Body Weight (lbs)';
+                weightInput.placeholder = '150';
+                weightContainer.style.borderLeft = '3px solid #a855f7';
+                weightContainer.style.paddingLeft = '12px';
             } else {
-                weightContainer.style.opacity = '1';
-                weightInput.disabled = false;
-                weightInput.required = true;
+                weightLabel.textContent = 'Weight (lbs)';
                 weightInput.placeholder = '135';
+                weightContainer.style.borderLeft = 'none';
+                weightContainer.style.paddingLeft = '0';
             }
         });
     }
@@ -352,6 +353,12 @@ function addExerciseToCurrentWorkout() {
         return;
     }
 
+    // For bodyweight, weight should be the user's body weight
+    if (weightType === 'bodyweight' && weight <= 0) {
+        showNotification('Enter your body weight! 🧍', false);
+        return;
+    }
+
     const entry = {
         id: Date.now(),
         date,
@@ -360,7 +367,7 @@ function addExerciseToCurrentWorkout() {
         reps,
         weight,
         weightType,
-        volume: sets * reps * (weightType === 'bodyweight' ? 1 : weight)
+        volume: sets * reps * weight  // Volume uses weight for both types now
     };
 
     currentWorkout.push(entry);
