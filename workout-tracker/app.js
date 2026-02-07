@@ -196,6 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeChartControls();
     setDefaultDate();
     updateUI();
+    renderPreviousExercises();
 });
 
 // ==========================================
@@ -1105,6 +1106,107 @@ function generateSuggestions() {
     }
 
     return suggestions.slice(0, 4); // Limit to 4 suggestions
+}
+
+// ==========================================
+// QUICK-SELECT PREVIOUS EXERCISES
+// ==========================================
+function renderPreviousExercises() {
+    const container = document.getElementById('previous-exercises-list');
+    if (!container) return;
+
+    // Get unique exercises from workout data
+    const exercises = [...new Set(workoutData.map(w => w.exercise))];
+
+    if (exercises.length === 0) {
+        container.innerHTML = `
+            <div style="grid-column: 1/-1; text-align: center; color: var(--color-text-tertiary); padding: var(--spacing-md);">
+                <div>No exercises logged yet</div>
+                <div style="font-size: 0.7rem; margin-top: 4px;">Log your first workout to see quick-select tiles</div>
+            </div>
+        `;
+        return;
+    }
+
+    // Calculate targets for each exercise
+    let html = '';
+    exercises.slice(0, 12).forEach(exercise => {
+        const muscleGroup = detectMuscleGroup(exercise);
+        const lastWorkout = workoutData
+            .filter(w => w.exercise === exercise)
+            .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+
+        const isBodyweight = lastWorkout?.weightType === 'bodyweight';
+        const targetWeight = isBodyweight ? lastWorkout.weight : Math.round((lastWorkout?.weight || 0) * 1.05 / 2.5) * 2.5 || '';
+        const targetReps = (lastWorkout?.reps || 10) + (isBodyweight ? 2 : 1);
+        const targetSets = lastWorkout?.sets || 3;
+
+        html += `
+            <div class="quick-exercise-tile" onclick="selectPreviousExercise('${exercise}', ${targetSets}, ${targetReps}, ${targetWeight}, '${isBodyweight ? 'bodyweight' : 'equipment'}')"
+                style="background: rgba(255,255,255,0.03); border-radius: 8px; padding: 10px; cursor: pointer; border: 1px solid var(--color-border); transition: all 0.2s; text-align: center;"
+                onmouseover="this.style.borderColor='var(--color-accent-primary)'" onmouseout="this.style.borderColor='var(--color-border)'">
+                <div style="font-size: 1.2rem;">${muscleGroup.emoji}</div>
+                <div style="font-size: 0.75rem; font-weight: 600; color: var(--color-text-primary); margin: 4px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${exercise}</div>
+                <div style="font-size: 0.65rem; color: var(--color-accent-primary);">
+                    ${isBodyweight ? '' : targetWeight + ' lbs · '}${targetSets}×${targetReps}
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+function selectPreviousExercise(exercise, sets, reps, weight, weightType) {
+    // Fill in the form
+    document.getElementById('exercise-name').value = exercise;
+    document.getElementById('sets').value = sets;
+    document.getElementById('reps').value = reps;
+    document.getElementById('weight').value = weight;
+
+    const weightTypeSelect = document.getElementById('weight-type');
+    if (weightTypeSelect) {
+        weightTypeSelect.value = weightType;
+        weightTypeSelect.dispatchEvent(new Event('change'));
+    }
+
+    // Update muscle group indicator
+    const muscleGroup = detectMuscleGroup(exercise);
+    const indicator = document.getElementById('muscle-group-indicator');
+    if (indicator) {
+        indicator.innerHTML = `${muscleGroup.emoji} Detected: <strong>${muscleGroup.displayName}</strong>`;
+    }
+
+    // Scroll to form
+    document.querySelector('.workout-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    showNotification(`📝 ${exercise} loaded with this week's targets!`);
+}
+
+// ==========================================
+// WORKOUT SESSION MODE
+// ==========================================
+function startWorkoutSession() {
+    if (currentWorkout.length === 0) {
+        showNotification('Add exercises first! 💪');
+        return;
+    }
+
+    // Store session data in localStorage
+    const sessionData = {
+        exercises: currentWorkout.map(e => ({
+            ...e,
+            completedSets: 0,
+            totalSets: e.sets
+        })),
+        startTime: Date.now(),
+        date: new Date().toISOString().split('T')[0]
+    };
+
+    localStorage.setItem(getUserStorageKey('activeSession'), JSON.stringify(sessionData));
+
+    // Navigate to session page
+    window.location.href = 'session.html';
 }
 
 // ==========================================

@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workout Session | Iron Progress</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        .session-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .session-header {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .session-timer-display {
+            font-size: 4rem;
+            font-weight: 700;
+            text-align: center;
+            color: #667eea;
+            padding: 30px;
+            margin: 20px 0;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 16px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .timer-label {
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.6);
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .rest-progress {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        .rest-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 1s linear;
+        }
+
+        .exercise-card {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .exercise-card.active {
+            border-color: #667eea;
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.2);
+        }
+
+        .exercise-card.completed {
+            opacity: 0.5;
+            border-color: #4ade80;
+        }
+
+        .exercise-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .exercise-details {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .sets-display {
+            display: flex;
+            gap: 6px;
+        }
+
+        .set-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .set-dot.completed {
+            background: #4ade80;
+        }
+
+        .complete-set-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .complete-set-btn:hover {
+            transform: scale(1.02);
+        }
+
+        .complete-set-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .timer-controls {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        .timer-btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+
+        .timer-btn.start {
+            background: #4ade80;
+            color: #000;
+        }
+
+        .timer-btn.skip {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        .end-session-btn {
+            width: 100%;
+            padding: 16px;
+            margin-top: 20px;
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid #ef4444;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .rest-suggestion {
+            text-align: center;
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .workout-elapsed {
+            text-align: center;
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="session-container">
+        <div class="session-header">
+            <h1>⏱️ Workout Session</h1>
+            <div id="workout-elapsed" class="workout-elapsed">Total: 00:00</div>
+        </div>
+
+        <!-- Rest Timer Section -->
+        <div id="rest-timer-section" style="display: none;">
+            <div class="timer-label">REST TIME</div>
+            <div id="rest-timer" class="session-timer-display">0:00</div>
+            <div class="rest-progress">
+                <div id="rest-progress-bar" class="rest-progress-bar" style="width: 100%;"></div>
+            </div>
+            <div class="rest-suggestion" id="rest-suggestion">Suggested: 2:00 for compound exercises</div>
+            <div class="timer-controls">
+                <button class="timer-btn skip" onclick="skipRest()">Skip Rest</button>
+            </div>
+        </div>
+
+        <!-- Exercises List -->
+        <div id="exercises-list"></div>
+
+        <!-- End Session Button -->
+        <button class="end-session-btn" onclick="endSession()">
+            🏁 End Workout
+        </button>
+    </div>
+
+    <script src="auth.js"></script>
+    <script>
+        // Session state
+        let sessionData = null;
+        let restTimer = null;
+        let restTimeRemaining = 0;
+        let restTimeTotal = 0;
+        let workoutStartTime = null;
+        let workoutElapsedInterval = null;
+
+        // Rest times by exercise type (in seconds)
+        const REST_TIMES = {
+            compound: 150,  // 2:30
+            isolation: 90,  // 1:30
+            bodyweight: 60  // 1:00
+        };
+
+        // Compound exercise keywords
+        const COMPOUND_KEYWORDS = ['squat', 'deadlift', 'bench', 'press', 'row', 'pull-up', 'dip'];
+
+        function getUserStorageKey(baseKey) {
+            const storedUser = localStorage.getItem('ironProgressUser');
+            if (storedUser) {
+                const user = JSON.parse(storedUser);
+                const uniqueId = user.uid || user.email || 'anonymous';
+                return `${baseKey}_${uniqueId}`;
+            }
+            return `${baseKey}_anonymous`;
+        }
+
+        function loadSession() {
+            const stored = localStorage.getItem(getUserStorageKey('activeSession'));
+            if (!stored) {
+                alert('No active session found!');
+                window.location.href = 'index.html';
+                return;
+            }
+
+            sessionData = JSON.parse(stored);
+            workoutStartTime = sessionData.startTime;
+            renderExercises();
+            startWorkoutTimer();
+        }
+
+        function startWorkoutTimer() {
+            workoutElapsedInterval = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - workoutStartTime) / 1000);
+                const mins = Math.floor(elapsed / 60);
+                const secs = elapsed % 60;
+                document.getElementById('workout-elapsed').textContent =
+                    `Total: ${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        function getRestTime(exercise) {
+            if (exercise.weightType === 'bodyweight') return REST_TIMES.bodyweight;
+
+            const name = exercise.exercise.toLowerCase();
+            const isCompound = COMPOUND_KEYWORDS.some(k => name.includes(k));
+            return isCompound ? REST_TIMES.compound : REST_TIMES.isolation;
+        }
+
+        function renderExercises() {
+            const container = document.getElementById('exercises-list');
+            let html = '';
+
+            sessionData.exercises.forEach((ex, index) => {
+                const isCompleted = ex.completedSets >= ex.totalSets;
+                const isActive = !isCompleted && sessionData.exercises.slice(0, index).every(e => e.completedSets >= e.totalSets);
+
+                html += `
+                    <div class="exercise-card ${isCompleted ? 'completed' : ''} ${isActive ? 'active' : ''}" id="exercise-${index}">
+                        <div class="exercise-name">${ex.exercise}</div>
+                        <div class="exercise-details">
+                            <div>
+                                <span>${ex.weight > 0 ? ex.weight + ' lbs · ' : ''}${ex.reps} reps</span>
+                            </div>
+                            <div class="sets-display">
+                                ${Array(ex.totalSets).fill(0).map((_, i) =>
+                    `<div class="set-dot ${i < ex.completedSets ? 'completed' : ''}"></div>`
+                ).join('')}
+                            </div>
+                        </div>
+                        ${!isCompleted ? `
+                            <button class="complete-set-btn" style="width: 100%; margin-top: 12px;" 
+                                onclick="completeSet(${index})" ${restTimer ? 'disabled' : ''}>
+                                ✓ Complete Set ${ex.completedSets + 1}/${ex.totalSets}
+                            </button>
+                        ` : `
+                            <div style="text-align: center; margin-top: 12px; color: #4ade80; font-size: 0.875rem;">
+                                ✅ Completed
+                            </div>
+                        `}
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function completeSet(exerciseIndex) {
+            const exercise = sessionData.exercises[exerciseIndex];
+            exercise.completedSets++;
+
+            // Save to localStorage
+            localStorage.setItem(getUserStorageKey('activeSession'), JSON.stringify(sessionData));
+
+            // Check if all exercises completed
+            const allDone = sessionData.exercises.every(e => e.completedSets >= e.totalSets);
+
+            if (allDone) {
+                renderExercises();
+                setTimeout(() => {
+                    alert('🎉 Workout Complete! Great job!');
+                    endSession();
+                }, 500);
+                return;
+            }
+
+            // Start rest timer if not last set of last exercise
+            if (exercise.completedSets < exercise.totalSets || exerciseIndex < sessionData.exercises.length - 1) {
+                startRestTimer(exercise);
+            }
+
+            renderExercises();
+        }
+
+        function startRestTimer(exercise) {
+            const restSection = document.getElementById('rest-timer-section');
+            const restDisplay = document.getElementById('rest-timer');
+            const progressBar = document.getElementById('rest-progress-bar');
+            const suggestion = document.getElementById('rest-suggestion');
+
+            restTimeTotal = getRestTime(exercise);
+            restTimeRemaining = restTimeTotal;
+
+            const exerciseType = exercise.weightType === 'bodyweight' ? 'bodyweight' :
+                COMPOUND_KEYWORDS.some(k => exercise.exercise.toLowerCase().includes(k)) ? 'compound' : 'isolation';
+            suggestion.textContent = `Suggested rest for ${exerciseType} exercise`;
+
+            restSection.style.display = 'block';
+
+            restTimer = setInterval(() => {
+                restTimeRemaining--;
+
+                const mins = Math.floor(restTimeRemaining / 60);
+                const secs = restTimeRemaining % 60;
+                restDisplay.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+
+                const progress = (restTimeRemaining / restTimeTotal) * 100;
+                progressBar.style.width = progress + '%';
+
+                if (restTimeRemaining <= 0) {
+                    skipRest();
+                    // Vibrate if available
+                    if (navigator.vibrate) navigator.vibrate(200);
+                }
+            }, 1000);
+
+            // Initial display
+            const mins = Math.floor(restTimeRemaining / 60);
+            const secs = restTimeRemaining % 60;
+            restDisplay.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function skipRest() {
+            if (restTimer) {
+                clearInterval(restTimer);
+                restTimer = null;
+            }
+            document.getElementById('rest-timer-section').style.display = 'none';
+            renderExercises();
+        }
+
+        function endSession() {
+            if (workoutElapsedInterval) clearInterval(workoutElapsedInterval);
+            if (restTimer) clearInterval(restTimer);
+
+            // Clear active session
+            localStorage.removeItem(getUserStorageKey('activeSession'));
+
+            // Go back to main page
+            window.location.href = 'index.html';
+        }
+
+        // Check auth and load session
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = JSON.parse(localStorage.getItem('ironProgressUser'));
+            if (!user) {
+                window.location.href = 'landing.html';
+                return;
+            }
+            loadSession();
+        });
+    </script>
+</body>
+
+</html>

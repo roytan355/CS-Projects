@@ -137,14 +137,33 @@
                     </button>
                 </form>
 
+                <!-- Your Previous Exercises (Quick Select) -->
+                <div id="previous-exercises-section" class="card" style="margin-top: var(--spacing-md);">
+                    <h3>⚡ Your Exercises</h3>
+                    <p
+                        style="color: var(--color-text-secondary); font-size: 0.75rem; margin-bottom: var(--spacing-sm);">
+                        Click to quick-add with this week's targets
+                    </p>
+                    <div id="previous-exercises-list"
+                        style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px;">
+                    </div>
+                </div>
+
                 <!-- Current Workout Entries -->
                 <div id="current-workout" class="workout-entries hidden">
                     <h3 class="mt-lg">Today's Workout</h3>
                     <div id="current-workout-list"></div>
-                    <button id="finish-workout-btn" class="btn btn-success mt-md">
-                        <span>🎯</span>
-                        <span>Finish Workout</span>
-                    </button>
+                    <div style="display: flex; gap: 8px; margin-top: var(--spacing-md);">
+                        <button id="finish-workout-btn" class="btn btn-success" style="flex: 1;">
+                            <span>🎯</span>
+                            <span>Finish Workout</span>
+                        </button>
+                        <button id="start-session-btn" class="btn btn-primary" style="flex: 1;"
+                            onclick="startWorkoutSession()">
+                            <span>⏱️</span>
+                            <span>Start Session</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
