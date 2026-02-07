@@ -421,6 +421,9 @@ def main():
     st.divider()
     st.header("📊 Visual Analysis")
     
+    # Calculate avg_disability for charts (if applicable)
+    avg_disability = (disability_low_premium + disability_high_premium) / 2 if include_disability else 0
+    
     viz_cols = st.columns(2)
     
     with viz_cols[0]:
@@ -445,41 +448,59 @@ def main():
         st.plotly_chart(fig_radar, use_container_width=True)
     
     with viz_cols[1]:
-        # Premium breakdown pie chart
+        # Premium breakdown pie chart - dynamic based on selection
+        if include_life and include_disability:
+            labels = ['Life Insurance', 'Disability Insurance']
+            pie_values = [life_premium, avg_disability]
+            colors = ['#667eea', '#764ba2']
+        elif include_life:
+            labels = ['Life Insurance']
+            pie_values = [life_premium]
+            colors = ['#667eea']
+        elif include_disability:
+            labels = ['Disability Insurance']
+            pie_values = [avg_disability]
+            colors = ['#764ba2']
+        else:
+            labels = ['No Insurance Selected']
+            pie_values = [1]
+            colors = ['#ccc']
+        
         fig_pie = go.Figure(data=[go.Pie(
-            labels=['Life Insurance', 'Disability Insurance'],
-            values=[life_premium, avg_disability],
+            labels=labels,
+            values=pie_values,
             hole=0.4,
-            marker_colors=['#667eea', '#764ba2']
+            marker_colors=colors
         )])
         fig_pie.update_layout(title="Premium Allocation")
         st.plotly_chart(fig_pie, use_container_width=True)
     
-    # Sensitivity Analysis
-    st.divider()
-    st.header("🔬 Sensitivity Analysis")
-    st.write("See how premiums change with different risk scenarios:")
-    
-    sensitivity_delta = st.slider("Adjust Risk Score by:", -20, 20, 0, 5)
-    new_risk_score = max(0, min(100, risk_score + sensitivity_delta))
-    
-    new_disability_low_prem, new_disability_high_prem = calculate_disability_premium(
-        annual_income, new_risk_score, OCCUPATION_MULTIPLIERS[occupation], disability_low_rate, disability_high_rate
-    )
-    new_avg_disability = (new_disability_low_prem + new_disability_high_prem) / 2
-    
-    sens_cols = st.columns(3)
-    with sens_cols[0]:
-        st.metric("Original Risk Score", f"{risk_score:.0f}")
-    with sens_cols[1]:
-        st.metric("Adjusted Risk Score", f"{new_risk_score:.0f}", delta=f"{sensitivity_delta:+}")
-    with sens_cols[2]:
-        premium_change = new_avg_disability - avg_disability
-        st.metric(
-            "Disability Premium Change", 
-            f"${new_avg_disability:,.0f}/yr",
-            delta=f"${premium_change:+,.0f}"
+    # Sensitivity Analysis (only show if disability is selected)
+    if include_disability:
+        st.divider()
+        st.header("🔬 Sensitivity Analysis")
+        st.write("See how premiums change with different risk scenarios:")
+        
+        sensitivity_delta = st.slider("Adjust Risk Score by:", -20, 20, 0, 5)
+        new_risk_score = max(0, min(100, risk_score + sensitivity_delta))
+        
+        new_disability_low_prem, new_disability_high_prem = calculate_disability_premium(
+            annual_income, new_risk_score, OCCUPATION_MULTIPLIERS[occupation], disability_low_rate, disability_high_rate
         )
+        new_avg_disability = (new_disability_low_prem + new_disability_high_prem) / 2
+        
+        sens_cols = st.columns(3)
+        with sens_cols[0]:
+            st.metric("Original Risk Score", f"{risk_score:.0f}")
+        with sens_cols[1]:
+            st.metric("Adjusted Risk Score", f"{new_risk_score:.0f}", delta=f"{sensitivity_delta:+}")
+        with sens_cols[2]:
+            premium_change = new_avg_disability - avg_disability
+            st.metric(
+                "Disability Premium Change", 
+                f"${new_avg_disability:,.0f}/yr",
+                delta=f"${premium_change:+,.0f}"
+            )
     
     # Export Summary
     st.divider()
