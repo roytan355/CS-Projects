@@ -1085,6 +1085,97 @@ function updateUI() {
     updateHistoryTab();
     updateSuggestions();
     updateBadgesTab();
+    updateProgressiveOverload();
+}
+
+// ==========================================
+// PROGRESSIVE OVERLOAD SUGGESTIONS
+// ==========================================
+function updateProgressiveOverload() {
+    const panel = document.getElementById('progressive-overload-list');
+    if (!panel) return;
+
+    // Get workouts from last 7 days
+    const now = new Date();
+    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    const lastWeekWorkouts = workoutData.filter(w => new Date(w.date) >= oneWeekAgo);
+
+    if (lastWeekWorkouts.length === 0) {
+        panel.innerHTML = `
+            <div style="text-align: center; color: var(--color-text-tertiary); padding: var(--spacing-lg);">
+                <div style="font-size: 2rem; margin-bottom: 8px;">🏋️</div>
+                <div>No workouts logged this week yet!</div>
+                <div style="font-size: 0.75rem; margin-top: 4px;">Log your first workout to see progressive overload targets.</div>
+            </div>
+        `;
+        return;
+    }
+
+    // Group by exercise and get max values
+    const exerciseStats = {};
+    lastWeekWorkouts.forEach(w => {
+        if (!exerciseStats[w.exercise]) {
+            exerciseStats[w.exercise] = {
+                maxWeight: 0,
+                maxReps: 0,
+                maxSets: 0,
+                sessions: 0
+            };
+        }
+        exerciseStats[w.exercise].maxWeight = Math.max(exerciseStats[w.exercise].maxWeight, w.weight);
+        exerciseStats[w.exercise].maxReps = Math.max(exerciseStats[w.exercise].maxReps, w.reps);
+        exerciseStats[w.exercise].maxSets = Math.max(exerciseStats[w.exercise].maxSets, w.sets);
+        exerciseStats[w.exercise].sessions++;
+    });
+
+    // Calculate progressive overload targets
+    let html = '<div style="display: grid; gap: var(--spacing-md);">';
+
+    Object.entries(exerciseStats).forEach(([exercise, stats]) => {
+        // Progressive overload rules:
+        // - Weight: +2.5-5 lbs (5% increase)
+        // - Reps: +1-2 reps
+        // - Sets: +1 set if already maxed reps
+        const weightIncrease = Math.max(2.5, Math.round(stats.maxWeight * 0.05 / 2.5) * 2.5);
+        const targetWeight = stats.maxWeight + weightIncrease;
+        const targetReps = stats.maxReps + 1;
+        const targetSets = stats.maxSets + (stats.maxReps >= 12 ? 1 : 0);
+
+        const muscleGroup = detectMuscleGroup(exercise);
+
+        html += `
+            <div style="background: rgba(255,255,255,0.03); border-radius: 8px; padding: var(--spacing-md); border-left: 3px solid var(--color-accent-primary);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span style="font-weight: 600; color: var(--color-text-primary);">${exercise}</span>
+                    <span style="font-size: 0.7rem; color: var(--color-accent-primary);">${muscleGroup.emoji} ${muscleGroup.displayName}</span>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; font-size: 0.8rem;">
+                    <div style="text-align: center; padding: 8px; background: rgba(102,126,234,0.1); border-radius: 6px;">
+                        <div style="color: var(--color-text-tertiary); font-size: 0.65rem;">WEIGHT</div>
+                        <div style="color: var(--color-text-primary); font-weight: bold;">${targetWeight} lbs</div>
+                        <div style="color: #4ade80; font-size: 0.65rem;">+${weightIncrease} lbs</div>
+                    </div>
+                    <div style="text-align: center; padding: 8px; background: rgba(102,126,234,0.1); border-radius: 6px;">
+                        <div style="color: var(--color-text-tertiary); font-size: 0.65rem;">REPS</div>
+                        <div style="color: var(--color-text-primary); font-weight: bold;">${targetReps} reps</div>
+                        <div style="color: #4ade80; font-size: 0.65rem;">+1 rep</div>
+                    </div>
+                    <div style="text-align: center; padding: 8px; background: rgba(102,126,234,0.1); border-radius: 6px;">
+                        <div style="color: var(--color-text-tertiary); font-size: 0.65rem;">SETS</div>
+                        <div style="color: var(--color-text-primary); font-weight: bold;">${targetSets} sets</div>
+                        <div style="color: ${targetSets > stats.maxSets ? '#4ade80' : 'var(--color-text-tertiary)'}; font-size: 0.65rem;">${targetSets > stats.maxSets ? '+1 set' : 'maintain'}</div>
+                    </div>
+                </div>
+                <div style="margin-top: 8px; font-size: 0.7rem; color: var(--color-text-tertiary);">
+                    Last week: ${stats.maxWeight} lbs × ${stats.maxSets} × ${stats.maxReps} (${stats.sessions} session${stats.sessions > 1 ? 's' : ''})
+                </div>
+            </div>
+        `;
+    });
+
+    html += '</div>';
+    panel.innerHTML = html;
 }
 
 // ==========================================
