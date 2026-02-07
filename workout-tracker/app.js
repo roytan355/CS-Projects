@@ -6,76 +6,76 @@
 // BADGE MILESTONES - Based on Strength Standards
 // ==========================================
 const BADGE_MILESTONES = {
-    // Bench Press Milestones (Common gym benchmarks)
+    // Bench Press Milestones (Easier thresholds for motivation)
     'Bench Press': [
-        { weight: 95, name: 'First Plate', tier: 'bronze', icon: '🥉', description: 'Bench 95 lbs' },
-        { weight: 135, name: 'One Plate Club', tier: 'silver', icon: '🥈', description: 'Bench 135 lbs (1 plate each side)' },
-        { weight: 185, name: 'Intermediate Presser', tier: 'gold', icon: '🥇', description: 'Bench 185 lbs' },
-        { weight: 225, name: 'Two Plate Club', tier: 'platinum', icon: '💎', description: 'Bench 225 lbs (2 plates each side)' },
-        { weight: 315, name: 'Elite Presser', tier: 'diamond', icon: '👑', description: 'Bench 315 lbs (3 plates each side)' }
+        { weight: 75, name: 'First Plate', tier: 'bronze', icon: '🥉', description: 'Bench 75 lbs' },
+        { weight: 115, name: 'One Plate Club', tier: 'silver', icon: '🥈', description: 'Bench 115 lbs' },
+        { weight: 155, name: 'Intermediate Presser', tier: 'gold', icon: '🥇', description: 'Bench 155 lbs' },
+        { weight: 185, name: 'Two Plate Club', tier: 'platinum', icon: '💎', description: 'Bench 185 lbs' },
+        { weight: 265, name: 'Elite Presser', tier: 'diamond', icon: '👑', description: 'Bench 265 lbs' }
     ],
 
     // Squat Milestones
     'Squat': [
-        { weight: 135, name: 'First Squat Plate', tier: 'bronze', icon: '🥉', description: 'Squat 135 lbs' },
-        { weight: 185, name: 'Rising Squatter', tier: 'silver', icon: '🥈', description: 'Squat 185 lbs' },
-        { weight: 225, name: 'Two Plate Squatter', tier: 'gold', icon: '🥇', description: 'Squat 225 lbs' },
-        { weight: 315, name: 'Three Plate Club', tier: 'platinum', icon: '💎', description: 'Squat 315 lbs' },
-        { weight: 405, name: 'Four Plate Legend', tier: 'diamond', icon: '👑', description: 'Squat 405 lbs' }
+        { weight: 115, name: 'First Squat Plate', tier: 'bronze', icon: '🥉', description: 'Squat 115 lbs' },
+        { weight: 155, name: 'Rising Squatter', tier: 'silver', icon: '🥈', description: 'Squat 155 lbs' },
+        { weight: 185, name: 'Two Plate Squatter', tier: 'gold', icon: '🥇', description: 'Squat 185 lbs' },
+        { weight: 265, name: 'Three Plate Club', tier: 'platinum', icon: '💎', description: 'Squat 265 lbs' },
+        { weight: 345, name: 'Four Plate Legend', tier: 'diamond', icon: '👑', description: 'Squat 345 lbs' }
     ],
 
     // Deadlift Milestones
     'Deadlift': [
-        { weight: 135, name: 'Dead Starter', tier: 'bronze', icon: '🥉', description: 'Deadlift 135 lbs' },
-        { weight: 225, name: 'Two Plate Puller', tier: 'silver', icon: '🥈', description: 'Deadlift 225 lbs' },
-        { weight: 315, name: 'Intermediate Puller', tier: 'gold', icon: '🥇', description: 'Deadlift 315 lbs' },
-        { weight: 405, name: 'Four Plate Deadlifter', tier: 'platinum', icon: '💎', description: 'Deadlift 405 lbs' },
-        { weight: 500, name: 'Half-Ton Hero', tier: 'diamond', icon: '👑', description: 'Deadlift 500 lbs' }
+        { weight: 115, name: 'Dead Starter', tier: 'bronze', icon: '🥉', description: 'Deadlift 115 lbs' },
+        { weight: 185, name: 'Two Plate Puller', tier: 'silver', icon: '🥈', description: 'Deadlift 185 lbs' },
+        { weight: 265, name: 'Intermediate Puller', tier: 'gold', icon: '🥇', description: 'Deadlift 265 lbs' },
+        { weight: 345, name: 'Four Plate Deadlifter', tier: 'platinum', icon: '💎', description: 'Deadlift 345 lbs' },
+        { weight: 425, name: 'Half-Ton Hero', tier: 'diamond', icon: '👑', description: 'Deadlift 425 lbs' }
     ],
 
     // Overhead Press Milestones
     'Overhead Press': [
-        { weight: 65, name: 'Press Beginner', tier: 'bronze', icon: '🥉', description: 'OHP 65 lbs' },
-        { weight: 95, name: 'Shoulder Soldier', tier: 'silver', icon: '🥈', description: 'OHP 95 lbs' },
-        { weight: 135, name: 'One Plate OHP', tier: 'gold', icon: '🥇', description: 'OHP 135 lbs' },
-        { weight: 155, name: 'Strong Shoulders', tier: 'platinum', icon: '💎', description: 'OHP 155 lbs' },
-        { weight: 185, name: 'Press Master', tier: 'diamond', icon: '👑', description: 'OHP 185 lbs' }
+        { weight: 55, name: 'Press Beginner', tier: 'bronze', icon: '🥉', description: 'OHP 55 lbs' },
+        { weight: 75, name: 'Shoulder Soldier', tier: 'silver', icon: '🥈', description: 'OHP 75 lbs' },
+        { weight: 115, name: 'One Plate OHP', tier: 'gold', icon: '🥇', description: 'OHP 115 lbs' },
+        { weight: 135, name: 'Strong Shoulders', tier: 'platinum', icon: '💎', description: 'OHP 135 lbs' },
+        { weight: 155, name: 'Press Master', tier: 'diamond', icon: '👑', description: 'OHP 155 lbs' }
     ],
 
     // Barbell Row Milestones
     'Barbell Row': [
-        { weight: 95, name: 'Row Rookie', tier: 'bronze', icon: '🥉', description: 'Row 95 lbs' },
-        { weight: 135, name: 'One Plate Row', tier: 'silver', icon: '🥈', description: 'Row 135 lbs' },
-        { weight: 185, name: 'Strong Back', tier: 'gold', icon: '🥇', description: 'Row 185 lbs' },
-        { weight: 225, name: 'Two Plate Row', tier: 'platinum', icon: '💎', description: 'Row 225 lbs' },
-        { weight: 275, name: 'Row King', tier: 'diamond', icon: '👑', description: 'Row 275 lbs' }
+        { weight: 75, name: 'Row Rookie', tier: 'bronze', icon: '🥉', description: 'Row 75 lbs' },
+        { weight: 115, name: 'One Plate Row', tier: 'silver', icon: '🥈', description: 'Row 115 lbs' },
+        { weight: 155, name: 'Strong Back', tier: 'gold', icon: '🥇', description: 'Row 155 lbs' },
+        { weight: 185, name: 'Two Plate Row', tier: 'platinum', icon: '💎', description: 'Row 185 lbs' },
+        { weight: 235, name: 'Row King', tier: 'diamond', icon: '👑', description: 'Row 235 lbs' }
     ],
 
     // Leg Press Milestones
     'Leg Press': [
-        { weight: 180, name: 'Leg Day Started', tier: 'bronze', icon: '🥉', description: 'Leg Press 180 lbs' },
-        { weight: 270, name: 'Building Legs', tier: 'silver', icon: '🥈', description: 'Leg Press 270 lbs' },
-        { weight: 360, name: 'Strong Legs', tier: 'gold', icon: '🥇', description: 'Leg Press 360 lbs' },
-        { weight: 450, name: 'Quad King', tier: 'platinum', icon: '💎', description: 'Leg Press 450 lbs' },
-        { weight: 540, name: 'Leg Press Legend', tier: 'diamond', icon: '👑', description: 'Leg Press 540+ lbs' }
+        { weight: 135, name: 'Leg Day Started', tier: 'bronze', icon: '🥉', description: 'Leg Press 135 lbs' },
+        { weight: 225, name: 'Building Legs', tier: 'silver', icon: '🥈', description: 'Leg Press 225 lbs' },
+        { weight: 315, name: 'Strong Legs', tier: 'gold', icon: '🥇', description: 'Leg Press 315 lbs' },
+        { weight: 405, name: 'Quad King', tier: 'platinum', icon: '💎', description: 'Leg Press 405 lbs' },
+        { weight: 495, name: 'Leg Press Legend', tier: 'diamond', icon: '👑', description: 'Leg Press 495 lbs' }
     ],
 
     // Dumbbell Curl Milestones
     'Dumbbell Curl': [
-        { weight: 20, name: 'Curl Beginner', tier: 'bronze', icon: '🥉', description: 'Curl 20 lbs' },
-        { weight: 30, name: 'Growing Guns', tier: 'silver', icon: '🥈', description: 'Curl 30 lbs' },
-        { weight: 40, name: 'Bicep Builder', tier: 'gold', icon: '🥇', description: 'Curl 40 lbs' },
-        { weight: 50, name: 'Arm Champion', tier: 'platinum', icon: '💎', description: 'Curl 50 lbs' },
-        { weight: 60, name: 'Curl King', tier: 'diamond', icon: '👑', description: 'Curl 60 lbs' }
+        { weight: 15, name: 'Curl Beginner', tier: 'bronze', icon: '🥉', description: 'Curl 15 lbs' },
+        { weight: 25, name: 'Growing Guns', tier: 'silver', icon: '🥈', description: 'Curl 25 lbs' },
+        { weight: 35, name: 'Bicep Builder', tier: 'gold', icon: '🥇', description: 'Curl 35 lbs' },
+        { weight: 45, name: 'Arm Champion', tier: 'platinum', icon: '💎', description: 'Curl 45 lbs' },
+        { weight: 55, name: 'Curl King', tier: 'diamond', icon: '👑', description: 'Curl 55 lbs' }
     ],
 
     // Lat Pulldown Milestones
     'Lat Pulldown': [
-        { weight: 80, name: 'Lat Rookie', tier: 'bronze', icon: '🥉', description: 'Pulldown 80 lbs' },
-        { weight: 120, name: 'Growing Wings', tier: 'silver', icon: '🥈', description: 'Pulldown 120 lbs' },
-        { weight: 160, name: 'Wide Back', tier: 'gold', icon: '🥇', description: 'Pulldown 160 lbs' },
-        { weight: 200, name: 'Lat Champion', tier: 'platinum', icon: '💎', description: 'Pulldown 200 lbs' },
-        { weight: 240, name: 'Wing Master', tier: 'diamond', icon: '👑', description: 'Pulldown 240 lbs' }
+        { weight: 70, name: 'Lat Rookie', tier: 'bronze', icon: '🥉', description: 'Pulldown 70 lbs' },
+        { weight: 100, name: 'Growing Wings', tier: 'silver', icon: '🥈', description: 'Pulldown 100 lbs' },
+        { weight: 135, name: 'Wide Back', tier: 'gold', icon: '🥇', description: 'Pulldown 135 lbs' },
+        { weight: 170, name: 'Lat Champion', tier: 'platinum', icon: '💎', description: 'Pulldown 170 lbs' },
+        { weight: 200, name: 'Wing Master', tier: 'diamond', icon: '👑', description: 'Pulldown 200 lbs' }
     ]
 };
 
@@ -109,23 +109,47 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ==========================================
-// DATA PERSISTENCE
+// DATA PERSISTENCE - User-Specific Storage
 // ==========================================
+function getUserStorageKey(baseKey) {
+    // Get current user from auth
+    const storedUser = localStorage.getItem('ironProgressUser');
+    if (storedUser) {
+        const user = JSON.parse(storedUser);
+        // Use user's UID for unique storage, fallback to email hash if no UID
+        const uniqueId = user.uid || user.email || 'anonymous';
+        return `${baseKey}_${uniqueId}`;
+    }
+    return `${baseKey}_anonymous`;
+}
+
 function loadData() {
-    const storedWorkouts = localStorage.getItem('workoutData');
-    const storedBadges = localStorage.getItem('unlockedBadges');
+    const workoutKey = getUserStorageKey('workoutData');
+    const badgesKey = getUserStorageKey('unlockedBadges');
+
+    const storedWorkouts = localStorage.getItem(workoutKey);
+    const storedBadges = localStorage.getItem(badgesKey);
 
     if (storedWorkouts) {
         workoutData = JSON.parse(storedWorkouts);
+    } else {
+        workoutData = [];
     }
     if (storedBadges) {
         unlockedBadges = JSON.parse(storedBadges);
+    } else {
+        unlockedBadges = [];
     }
+
+    console.log('Loaded data for user:', getUserStorageKey(''));
 }
 
 function saveData() {
-    localStorage.setItem('workoutData', JSON.stringify(workoutData));
-    localStorage.setItem('unlockedBadges', JSON.stringify(unlockedBadges));
+    const workoutKey = getUserStorageKey('workoutData');
+    const badgesKey = getUserStorageKey('unlockedBadges');
+
+    localStorage.setItem(workoutKey, JSON.stringify(workoutData));
+    localStorage.setItem(badgesKey, JSON.stringify(unlockedBadges));
 }
 
 // ==========================================
