@@ -1115,33 +1115,88 @@ function updateUI() {
     updateHistoryTab();
     updateSuggestions();
     updateBadgesTab();
-    updateProgressiveOverload();
+    checkForNewWeek(); // Check if we should show weekly goals popup
 }
 
 // ==========================================
-// PROGRESSIVE OVERLOAD SUGGESTIONS
+// WEEKLY GOALS MODAL
 // ==========================================
-function updateProgressiveOverload() {
-    const panel = document.getElementById('progressive-overload-list');
-    if (!panel) return;
+function getWeekStartDate(date = new Date()) {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Monday start
+    return new Date(d.setDate(diff));
+}
 
-    // Get workouts from last 7 days
+function getWeekDateRange() {
+    const start = getWeekStartDate();
+    const end = new Date(start);
+    end.setDate(end.getDate() + 6);
+
+    const options = { month: 'short', day: 'numeric' };
+    return `${start.toLocaleDateString('en-US', options)} - ${end.toLocaleDateString('en-US', options)}, ${end.getFullYear()}`;
+}
+
+function checkForNewWeek() {
+    const currentWeekStart = getWeekStartDate().toISOString().split('T')[0];
+    const lastShownWeek = localStorage.getItem(getUserStorageKey('lastWeeklyGoalsShown'));
+
+    // If this is a new week and we have previous workout data, show modal
+    if (lastShownWeek !== currentWeekStart && workoutData.length > 0) {
+        // Check if we have data from last week
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+        const hasLastWeekData = workoutData.some(w => new Date(w.date) >= oneWeekAgo);
+
+        if (hasLastWeekData) {
+            // Delay popup slightly so page loads first
+            setTimeout(() => showWeeklyGoalsModal(true), 500);
+        }
+    }
+}
+
+function showWeeklyGoalsModal(isAutoShow = false) {
+    const modal = document.getElementById('weekly-goals-modal');
+    const weekRange = document.getElementById('week-date-range');
+    const goalsList = document.getElementById('weekly-goals-list');
+
+    if (!modal || !goalsList) return;
+
+    // Set week date range
+    weekRange.textContent = getWeekDateRange();
+
+    // Get last week's workout data
     const now = new Date();
     const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-
     const lastWeekWorkouts = workoutData.filter(w => new Date(w.date) >= oneWeekAgo);
 
     if (lastWeekWorkouts.length === 0) {
-        panel.innerHTML = `
+        goalsList.innerHTML = `
             <div style="text-align: center; color: var(--color-text-tertiary); padding: var(--spacing-lg);">
                 <div style="font-size: 2rem; margin-bottom: 8px;">🏋️</div>
-                <div>No workouts logged this week yet!</div>
-                <div style="font-size: 0.75rem; margin-top: 4px;">Log your first workout to see progressive overload targets.</div>
+                <div>No workouts from last week!</div>
+                <div style="font-size: 0.75rem; margin-top: 4px;">Start logging workouts to get weekly goals.</div>
             </div>
         `;
-        return;
+    } else {
+        goalsList.innerHTML = generateProgressiveOverloadHTML(lastWeekWorkouts);
     }
 
+    modal.classList.remove('hidden');
+
+    // Mark this week as shown (only on auto-show)
+    if (isAutoShow) {
+        const currentWeekStart = getWeekStartDate().toISOString().split('T')[0];
+        localStorage.setItem(getUserStorageKey('lastWeeklyGoalsShown'), currentWeekStart);
+    }
+}
+
+function closeWeeklyGoalsModal() {
+    const modal = document.getElementById('weekly-goals-modal');
+    if (modal) modal.classList.add('hidden');
+}
+
+function generateProgressiveOverloadHTML(lastWeekWorkouts) {
     // Group by exercise and get max values
     const exerciseStats = {};
     lastWeekWorkouts.forEach(w => {
@@ -1158,7 +1213,6 @@ function updateProgressiveOverload() {
         exerciseStats[w.exercise].maxReps = Math.max(exerciseStats[w.exercise].maxReps, w.reps);
         exerciseStats[w.exercise].maxSets = Math.max(exerciseStats[w.exercise].maxSets, w.sets);
         exerciseStats[w.exercise].sessions++;
-        // If any session is bodyweight, mark as bodyweight
         if (w.weightType === 'bodyweight') {
             exerciseStats[w.exercise].isBodyweight = true;
         }
@@ -1168,13 +1222,9 @@ function updateProgressiveOverload() {
     let html = '<div style="display: grid; gap: var(--spacing-md);">';
 
     Object.entries(exerciseStats).forEach(([exercise, stats]) => {
-        // Progressive overload rules:
-        // - Weight: +2.5-5 lbs (5% increase) - only for equipment
-        // - Reps: +1-2 reps
-        // - Sets: +1 set if already maxed reps
         const weightIncrease = Math.max(2.5, Math.round(stats.maxWeight * 0.05 / 2.5) * 2.5);
         const targetWeight = stats.maxWeight + weightIncrease;
-        const targetReps = stats.maxReps + (stats.isBodyweight ? 2 : 1); // +2 reps for bodyweight
+        const targetReps = stats.maxReps + (stats.isBodyweight ? 2 : 1);
         const targetSets = stats.maxSets + (stats.maxReps >= 12 ? 1 : 0);
 
         const muscleGroup = detectMuscleGroup(exercise);
@@ -1213,7 +1263,7 @@ function updateProgressiveOverload() {
     });
 
     html += '</div>';
-    panel.innerHTML = html;
+    return html;
 }
 
 // ==========================================

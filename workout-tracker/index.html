@@ -154,14 +154,11 @@
                 <div id="suggestions-list"></div>
             </div>
 
-            <!-- Progressive Overload Panel -->
-            <div id="progressive-overload-panel" class="card">
-                <h3>📈 Weekly Progressive Overload</h3>
-                <p style="color: var(--color-text-secondary); font-size: 0.875rem; margin-bottom: var(--spacing-md);">
-                    Suggested targets based on your last week's performance
-                </p>
-                <div id="progressive-overload-list"></div>
-            </div>
+            <!-- Weekly Goals Button -->
+            <button id="weekly-goals-btn" class="btn btn-secondary" style="width: 100%; margin-top: var(--spacing-md);"
+                onclick="showWeeklyGoalsModal()">
+                📅 View This Week's Goals
+            </button>
         </div>
 
         <!-- Tab: Badges -->
@@ -372,6 +369,35 @@
             <input type="text" id="chatbot-input" placeholder="Ask about diet, form, or workouts..."
                 onkeypress="handleChatKeypress(event)">
             <button onclick="sendChatMessage()">➤</button>
+        </div>
+    </div>
+
+    <!-- Weekly Goals Modal -->
+    <div id="weekly-goals-modal" class="modal hidden">
+        <div class="modal-overlay" onclick="closeWeeklyGoalsModal()"></div>
+        <div class="modal-content" style="max-width: 600px; max-height: 80vh; overflow-y: auto;">
+            <div class="modal-header">
+                <h2>📅 This Week's Goals</h2>
+                <button class="modal-close" onclick="closeWeeklyGoalsModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div id="week-info"
+                    style="text-align: center; margin-bottom: var(--spacing-md); padding: var(--spacing-sm); background: rgba(102,126,234,0.1); border-radius: 8px;">
+                    <div style="font-size: 0.75rem; color: var(--color-text-tertiary);">WEEK OF</div>
+                    <div id="week-date-range" style="font-weight: 600; color: var(--color-text-primary);"></div>
+                </div>
+                <p
+                    style="color: var(--color-text-secondary); font-size: 0.875rem; margin-bottom: var(--spacing-md); text-align: center;">
+                    Based on your performance last week, here are your targets:
+                </p>
+                <div id="weekly-goals-list"></div>
+            </div>
+            <div class="modal-footer"
+                style="padding-top: var(--spacing-md); border-top: 1px solid var(--color-border);">
+                <button class="btn btn-primary" onclick="closeWeeklyGoalsModal()" style="width: 100%;">
+                    💪 Let's Go!
+                </button>
+            </div>
         </div>
     </div>
 
