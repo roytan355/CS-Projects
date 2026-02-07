@@ -209,7 +209,7 @@ def main():
     include_disability = st.sidebar.checkbox("Disability Insurance", value=True)
     
     st.sidebar.divider()
-    st.sidebar.header("� Financial Information")
+    st.sidebar.header("$ Financial Information")
     
     annual_income = st.sidebar.number_input(
         "Annual Income ($)", 
