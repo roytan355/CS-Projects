@@ -310,6 +310,27 @@ function initializeForm() {
             muscleIndicator.innerHTML = '';
         }
     });
+
+    // Weight type toggle
+    const weightTypeSelect = document.getElementById('weight-type');
+    const weightContainer = document.getElementById('weight-container');
+    const weightInput = document.getElementById('weight');
+
+    if (weightTypeSelect) {
+        weightTypeSelect.addEventListener('change', (e) => {
+            if (e.target.value === 'bodyweight') {
+                weightContainer.style.opacity = '0.5';
+                weightInput.value = 0;
+                weightInput.disabled = true;
+                weightInput.required = false;
+            } else {
+                weightContainer.style.opacity = '1';
+                weightInput.disabled = false;
+                weightInput.required = true;
+                weightInput.placeholder = '135';
+            }
+        });
+    }
 }
 
 function setDefaultDate() {
@@ -323,9 +344,10 @@ function addExerciseToCurrentWorkout() {
     const exercise = document.getElementById('exercise-name').value.trim();
     const sets = parseInt(document.getElementById('sets').value);
     const reps = parseInt(document.getElementById('reps').value);
-    const weight = parseFloat(document.getElementById('weight').value);
+    const weight = parseFloat(document.getElementById('weight').value) || 0;
+    const weightType = document.getElementById('weight-type')?.value || 'equipment';
 
-    if (!exercise || !sets || !reps || weight < 0) {
+    if (!exercise || !sets || !reps) {
         showNotification('Fill in all fields! 💪', false);
         return;
     }
@@ -337,7 +359,8 @@ function addExerciseToCurrentWorkout() {
         sets,
         reps,
         weight,
-        volume: sets * reps * weight
+        weightType,
+        volume: sets * reps * (weightType === 'bodyweight' ? 1 : weight)
     };
 
     currentWorkout.push(entry);
@@ -1120,13 +1143,18 @@ function updateProgressiveOverload() {
                 maxWeight: 0,
                 maxReps: 0,
                 maxSets: 0,
-                sessions: 0
+                sessions: 0,
+                isBodyweight: w.weightType === 'bodyweight'
             };
         }
         exerciseStats[w.exercise].maxWeight = Math.max(exerciseStats[w.exercise].maxWeight, w.weight);
         exerciseStats[w.exercise].maxReps = Math.max(exerciseStats[w.exercise].maxReps, w.reps);
         exerciseStats[w.exercise].maxSets = Math.max(exerciseStats[w.exercise].maxSets, w.sets);
         exerciseStats[w.exercise].sessions++;
+        // If any session is bodyweight, mark as bodyweight
+        if (w.weightType === 'bodyweight') {
+            exerciseStats[w.exercise].isBodyweight = true;
+        }
     });
 
     // Calculate progressive overload targets
@@ -1134,32 +1162,35 @@ function updateProgressiveOverload() {
 
     Object.entries(exerciseStats).forEach(([exercise, stats]) => {
         // Progressive overload rules:
-        // - Weight: +2.5-5 lbs (5% increase)
+        // - Weight: +2.5-5 lbs (5% increase) - only for equipment
         // - Reps: +1-2 reps
         // - Sets: +1 set if already maxed reps
         const weightIncrease = Math.max(2.5, Math.round(stats.maxWeight * 0.05 / 2.5) * 2.5);
         const targetWeight = stats.maxWeight + weightIncrease;
-        const targetReps = stats.maxReps + 1;
+        const targetReps = stats.maxReps + (stats.isBodyweight ? 2 : 1); // +2 reps for bodyweight
         const targetSets = stats.maxSets + (stats.maxReps >= 12 ? 1 : 0);
 
         const muscleGroup = detectMuscleGroup(exercise);
+        const isBodyweight = stats.isBodyweight;
 
         html += `
-            <div style="background: rgba(255,255,255,0.03); border-radius: 8px; padding: var(--spacing-md); border-left: 3px solid var(--color-accent-primary);">
+            <div style="background: rgba(255,255,255,0.03); border-radius: 8px; padding: var(--spacing-md); border-left: 3px solid ${isBodyweight ? '#a855f7' : 'var(--color-accent-primary)'};">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                     <span style="font-weight: 600; color: var(--color-text-primary);">${exercise}</span>
-                    <span style="font-size: 0.7rem; color: var(--color-accent-primary);">${muscleGroup.emoji} ${muscleGroup.displayName}</span>
+                    <span style="font-size: 0.7rem; color: ${isBodyweight ? '#a855f7' : 'var(--color-accent-primary)'};">${isBodyweight ? '🧍 Bodyweight' : muscleGroup.emoji + ' ' + muscleGroup.displayName}</span>
                 </div>
-                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; font-size: 0.8rem;">
+                <div style="display: grid; grid-template-columns: ${isBodyweight ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)'}; gap: 8px; font-size: 0.8rem;">
+                    ${!isBodyweight ? `
                     <div style="text-align: center; padding: 8px; background: rgba(102,126,234,0.1); border-radius: 6px;">
                         <div style="color: var(--color-text-tertiary); font-size: 0.65rem;">WEIGHT</div>
                         <div style="color: var(--color-text-primary); font-weight: bold;">${targetWeight} lbs</div>
                         <div style="color: #4ade80; font-size: 0.65rem;">+${weightIncrease} lbs</div>
                     </div>
+                    ` : ''}
                     <div style="text-align: center; padding: 8px; background: rgba(102,126,234,0.1); border-radius: 6px;">
                         <div style="color: var(--color-text-tertiary); font-size: 0.65rem;">REPS</div>
                         <div style="color: var(--color-text-primary); font-weight: bold;">${targetReps} reps</div>
-                        <div style="color: #4ade80; font-size: 0.65rem;">+1 rep</div>
+                        <div style="color: #4ade80; font-size: 0.65rem;">+${isBodyweight ? 2 : 1} reps</div>
                     </div>
                     <div style="text-align: center; padding: 8px; background: rgba(102,126,234,0.1); border-radius: 6px;">
                         <div style="color: var(--color-text-tertiary); font-size: 0.65rem;">SETS</div>
@@ -1168,7 +1199,7 @@ function updateProgressiveOverload() {
                     </div>
                 </div>
                 <div style="margin-top: 8px; font-size: 0.7rem; color: var(--color-text-tertiary);">
-                    Last week: ${stats.maxWeight} lbs × ${stats.maxSets} × ${stats.maxReps} (${stats.sessions} session${stats.sessions > 1 ? 's' : ''})
+                    Last week: ${isBodyweight ? '' : stats.maxWeight + ' lbs × '}${stats.maxSets} sets × ${stats.maxReps} reps (${stats.sessions} session${stats.sessions > 1 ? 's' : ''})
                 </div>
             </div>
         `;
@@ -1183,7 +1214,7 @@ function updateProgressiveOverload() {
 // ==========================================
 function showNotification(message, isBadge = false) {
     const notification = document.createElement('div');
-    notification.className = `notification${isBadge ? ' badge-notification' : ''}`;
+    notification.className = `notification${isBadge ? ' badge-notification' : ''} `;
     notification.textContent = message;
     document.body.appendChild(notification);
 
@@ -1270,7 +1301,7 @@ function updateTutorials() {
 
     const videos = TUTORIAL_VIDEOS[exercise];
     list.innerHTML = videos.map(video => `
-        <div class="tutorial-item">
+            < div class="tutorial-item" >
             <div class="tutorial-info">
                 <div class="tutorial-title">${video.title}</div>
                 <div class="tutorial-channel">📺 ${video.channel}</div>
@@ -1278,8 +1309,8 @@ function updateTutorials() {
             <a href="${video.url}" target="_blank" rel="noopener" class="btn btn-primary btn-small">
                 ▶ Watch
             </a>
-        </div>
-    `).join('');
+        </div >
+            `).join('');
 }
 
 // ==========================================
@@ -1363,7 +1394,7 @@ function calculateNutrition(e) {
 
     // Diet tips
     const tipsHtml = `
-        <div class="suggestion-item success">
+            < div class="suggestion-item success" >
             <div class="suggestion-icon">🎯</div>
             <div class="suggestion-content">
                 <div class="suggestion-title">Your ${goalDescription} targets</div>
@@ -1371,7 +1402,7 @@ function calculateNutrition(e) {
                     These numbers are calculated based on your stats. Adjust as needed based on progress.
                 </div>
             </div>
-        </div>
+        </div >
         <div class="suggestion-item success">
             <div class="suggestion-icon">🥩</div>
             <div class="suggestion-content">
@@ -1400,7 +1431,7 @@ function calculateNutrition(e) {
                 </div>
             </div>
         </div>
-    `;
+        `;
     document.getElementById('diet-tips').innerHTML = tipsHtml;
 
     // Sample meal plan
@@ -1418,11 +1449,11 @@ function generateMealPlan(calories, protein, carbs, fat, goal) {
     const proteinPerMeal = Math.round(protein / mealsPerDay);
 
     let planHtml = `
-        <div style="margin-bottom: var(--spacing-md);">
+            < div style = "margin-bottom: var(--spacing-md);" >
             <strong style="color: var(--color-text-primary);">Recommended: ${mealsPerDay} meals/day</strong>
             <span style="color: var(--color-text-tertiary);"> (~${caloriesPerMeal} cal, ~${proteinPerMeal}g protein each)</span>
-        </div>
-    `;
+        </div >
+            `;
 
     const meals = [
         {
@@ -1457,7 +1488,7 @@ function generateMealPlan(calories, protein, carbs, fat, goal) {
             icon: '🌙',
             options: [
                 `Lean beef + sweet potato + green beans`,
-                `Chicken stir-fry + brown rice`,
+                `Chicken stir - fry + brown rice`,
                 `Fish tacos + black beans + vegetables`
             ]
         }
@@ -1479,23 +1510,23 @@ function generateMealPlan(calories, protein, carbs, fat, goal) {
     meals.forEach(meal => {
         const randomOption = meal.options[Math.floor(Math.random() * meal.options.length)];
         planHtml += `
-            <div class="meal-card">
+            < div class="meal-card" >
                 <div class="meal-header">
                     <span class="meal-icon">${meal.icon}</span>
                     <span class="meal-name">${meal.name}</span>
                 </div>
                 <div class="meal-description">${randomOption}</div>
-            </div>
-        `;
+            </div >
+            `;
     });
     planHtml += '</div>';
 
     planHtml += `
-        <p style="color: var(--color-text-tertiary); font-size: 0.75rem; margin-top: var(--spacing-md); font-style: italic;">
-            * This is a sample plan. Adjust portions to meet your calorie and protein targets.
+            < p style = "color: var(--color-text-tertiary); font-size: 0.75rem; margin-top: var(--spacing-md); font-style: italic;" >
+            * This is a sample plan.Adjust portions to meet your calorie and protein targets.
             Consult a nutritionist for personalized advice.
-        </p>
-    `;
+        </p >
+            `;
 
     return planHtml;
 }
@@ -1661,76 +1692,77 @@ function generateBodyMapSVG() {
     const stats = getMuscleGroupStats();
 
     return `
-    <svg viewBox="0 0 200 400" class="body-map-svg">
-        <!-- Head -->
+            < svg viewBox = "0 0 200 400" class="body-map-svg" >
+        < !--Head -->
         <circle cx="100" cy="30" r="25" fill="#2a2a2a" stroke="#444" stroke-width="1"/>
         
-        <!-- Neck -->
+        <!--Neck -->
         <rect x="90" y="55" width="20" height="15" fill="#2a2a2a" stroke="#444" stroke-width="1"/>
         
-        <!-- Shoulders -->
+        <!--Shoulders -->
         <ellipse cx="55" cy="85" rx="20" ry="12" fill="${stats.shoulders.level.color}" class="muscle-part" data-muscle="shoulders"/>
         <ellipse cx="145" cy="85" rx="20" ry="12" fill="${stats.shoulders.level.color}" class="muscle-part" data-muscle="shoulders"/>
         
-        <!-- Chest -->
+        <!--Chest -->
         <path d="M 60 95 Q 100 85 140 95 Q 140 130 100 135 Q 60 130 60 95" fill="${stats.chest.level.color}" class="muscle-part" data-muscle="chest"/>
         
-        <!-- Abs -->
+        <!--Abs -->
         <rect x="75" y="140" width="50" height="60" rx="5" fill="${stats.abs.level.color}" class="muscle-part" data-muscle="abs"/>
         
-        <!-- Biceps -->
+        <!--Biceps -->
         <ellipse cx="40" cy="130" rx="12" ry="25" fill="${stats.biceps.level.color}" class="muscle-part" data-muscle="biceps"/>
         <ellipse cx="160" cy="130" rx="12" ry="25" fill="${stats.biceps.level.color}" class="muscle-part" data-muscle="biceps"/>
         
-        <!-- Triceps -->
+        <!--Triceps -->
         <ellipse cx="35" cy="135" rx="8" ry="20" fill="${stats.triceps.level.color}" class="muscle-part" data-muscle="triceps" opacity="0.8"/>
         <ellipse cx="165" cy="135" rx="8" ry="20" fill="${stats.triceps.level.color}" class="muscle-part" data-muscle="triceps" opacity="0.8"/>
         
-        <!-- Forearms -->
+        <!--Forearms -->
         <ellipse cx="30" cy="175" rx="8" ry="25" fill="#2a2a2a" stroke="#444" stroke-width="1"/>
         <ellipse cx="170" cy="175" rx="8" ry="25" fill="#2a2a2a" stroke="#444" stroke-width="1"/>
         
-        <!-- Quads -->
+        <!--Quads -->
         <ellipse cx="80" cy="250" rx="18" ry="45" fill="${stats.quads.level.color}" class="muscle-part" data-muscle="quads"/>
         <ellipse cx="120" cy="250" rx="18" ry="45" fill="${stats.quads.level.color}" class="muscle-part" data-muscle="quads"/>
         
-        <!-- Hamstrings (visible from front as shadow) -->
+        <!--Hamstrings(visible from front as shadow) -->
         <ellipse cx="80" cy="260" rx="12" ry="35" fill="${stats.hamstrings.level.color}" class="muscle-part" data-muscle="hamstrings" opacity="0.5"/>
         <ellipse cx="120" cy="260" rx="12" ry="35" fill="${stats.hamstrings.level.color}" class="muscle-part" data-muscle="hamstrings" opacity="0.5"/>
         
-        <!-- Glutes -->
+        <!--Glutes -->
         <ellipse cx="85" cy="210" rx="20" ry="12" fill="${stats.glutes.level.color}" class="muscle-part" data-muscle="glutes"/>
         <ellipse cx="115" cy="210" rx="20" ry="12" fill="${stats.glutes.level.color}" class="muscle-part" data-muscle="glutes"/>
         
-        <!-- Calves -->
+        <!--Calves -->
         <ellipse cx="75" cy="330" rx="12" ry="30" fill="${stats.calves.level.color}" class="muscle-part" data-muscle="calves"/>
         <ellipse cx="125" cy="330" rx="12" ry="30" fill="${stats.calves.level.color}" class="muscle-part" data-muscle="calves"/>
         
-        <!-- Feet -->
+        <!--Feet -->
         <ellipse cx="75" cy="375" rx="15" ry="8" fill="#2a2a2a" stroke="#444" stroke-width="1"/>
         <ellipse cx="125" cy="375" rx="15" ry="8" fill="#2a2a2a" stroke="#444" stroke-width="1"/>
-    </svg>
-    `;
+    </svg >
+            `;
 }
 
 function generateMuscleLegend() {
     return `
-    <div class="muscle-legend">
-        ${MUSCLE_LEVELS.map(level => `
+            < div class="muscle-legend" >
+                ${MUSCLE_LEVELS.map(level => `
             <div class="legend-item">
                 <span class="legend-color" style="background: ${level.color}"></span>
                 <span class="legend-label">${level.name}</span>
             </div>
-        `).join('')}
-    </div>
-    `;
+        `).join('')
+        }
+    </div >
+            `;
 }
 
 function generateMuscleStats() {
     const stats = getMuscleGroupStats();
 
     return Object.entries(stats).map(([muscle, data]) => `
-        <div class="muscle-stat-item">
+            < div class="muscle-stat-item" >
             <div class="muscle-stat-header">
                 <span class="muscle-name">${muscle.charAt(0).toUpperCase() + muscle.slice(1)}</span>
                 <span class="muscle-level" style="color: ${data.level.color}">${data.level.name}</span>
@@ -1738,8 +1770,8 @@ function generateMuscleStats() {
             <div class="muscle-stat-details">
                 ${data.sessions} sessions • ${formatVolume(data.totalVolume)} volume
             </div>
-        </div>
-    `).join('');
+        </div >
+            `).join('');
 }
 
 // Update the badges tab to show new ranking and body map
@@ -1750,7 +1782,7 @@ function updateBadgesTab() {
 
     // Build new badges/ranking display
     let html = `
-        <!-- Overall Rank Section -->
+            < !--Overall Rank Section-- >
         <div class="rank-section">
             <div class="current-rank">
                 <span class="rank-icon">${rankInfo.current.icon}</span>
@@ -1781,18 +1813,18 @@ function updateBadgesTab() {
             </div>
         </div>
         
-        <!-- Body Map Section -->
-        <div class="body-map-section">
-            <h3>💪 Muscle Development</h3>
-            ${generateMuscleLegend()}
-            <div class="body-map-container">
-                ${generateBodyMapSVG()}
-                <div class="muscle-stats-list">
-                    ${generateMuscleStats()}
+        <!--Body Map Section-- >
+            <div class="body-map-section">
+                <h3>💪 Muscle Development</h3>
+                ${generateMuscleLegend()}
+                <div class="body-map-container">
+                    ${generateBodyMapSVG()}
+                    <div class="muscle-stats-list">
+                        ${generateMuscleStats()}
+                    </div>
                 </div>
             </div>
-        </div>
-    `;
+        `;
 
     badgesGrid.innerHTML = html;
 
