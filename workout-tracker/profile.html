@@ -275,18 +275,19 @@
             <div class="setting-row">
                 <span class="setting-label">Height</span>
                 <div style="display: flex; align-items: center; gap: 8px;">
-                    <input type="number" id="height-ft" class="setting-input" style="width: 60px;" placeholder="5"
-                        min="3" max="8">
+                    <input type="text" inputmode="numeric" pattern="[0-9]*" id="height-ft" class="setting-input"
+                        style="width: 60px;" placeholder="5">
                     <span>ft</span>
-                    <input type="number" id="height-in" class="setting-input" style="width: 60px;" placeholder="10"
-                        min="0" max="11">
+                    <input type="text" inputmode="numeric" pattern="[0-9]*" id="height-in" class="setting-input"
+                        style="width: 60px;" placeholder="10">
                     <span>in</span>
                 </div>
             </div>
             <div class="setting-row">
                 <span class="setting-label">Body Weight</span>
                 <div style="display: flex; align-items: center; gap: 8px;">
-                    <input type="number" id="body-weight" class="setting-input" placeholder="150" min="50" max="500">
+                    <input type="text" inputmode="numeric" pattern="[0-9]*" id="body-weight" class="setting-input"
+                        placeholder="150">
                     <span>lbs</span>
                 </div>
             </div>
