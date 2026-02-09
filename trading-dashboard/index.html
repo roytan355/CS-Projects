@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📈 Day Trading Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="dashboard">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="logo">
+                <span class="logo-icon">📈</span>
+                <h1>Day Trading Dashboard</h1>
+            </div>
+            <div class="market-status" id="market-status">
+                <span class="status-dot"></span>
+                <span>Loading market status...</span>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-refresh" onclick="refreshAll()">🔄 Refresh</button>
+                <span class="last-update" id="last-update">--</span>
+            </div>
+        </header>
+
+        <!-- Market Overview -->
+        <section class="market-overview">
+            <h2>📊 Market Overview</h2>
+            <div class="market-cards" id="market-cards">
+                <div class="market-card loading">Loading...</div>
+            </div>
+        </section>
+
+        <!-- Main Content Grid -->
+        <div class="main-grid">
+            <!-- Today's Recommendations -->
+            <section class="recommendations-panel">
+                <h2>🎯 Today's Top Picks</h2>
+                <p class="panel-subtitle">AI-powered aggressive day trading opportunities</p>
+                <div class="recommendations-list" id="recommendations-list">
+                    <div class="loading-spinner">Scanning for opportunities...</div>
+                </div>
+            </section>
+
+            <!-- Stock Scanner -->
+            <section class="scanner-panel">
+                <h2>🔍 Momentum Scanner</h2>
+                <div class="scanner-filters">
+                    <label>Min Change: <input type="number" id="min-change" value="2" step="0.5">%</label>
+                    <label>Min Volume: <input type="number" id="min-volume" value="1.3" step="0.1">x</label>
+                    <button class="btn btn-scan" onclick="scanStocks()">Scan</button>
+                </div>
+                <div class="scanner-results" id="scanner-results">
+                    <div class="loading-spinner">Waiting for scan...</div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Portfolio Generator -->
+        <section class="portfolio-section">
+            <h2>🚀 Portfolio Generator</h2>
+            <p class="panel-subtitle">Enter your capital and get an AI-optimized diversified portfolio</p>
+            <div class="portfolio-input-grid">
+                <div class="calc-input">
+                    <label>Total Capital ($)</label>
+                    <input type="number" id="portfolio-capital" value="10000" step="1000">
+                </div>
+                <div class="calc-input">
+                    <label>Max Positions</label>
+                    <input type="number" id="portfolio-max-positions" value="5" min="1" max="10">
+                </div>
+                <button class="btn btn-generate" onclick="generatePortfolio()">🎯 Generate Portfolio</button>
+            </div>
+            <div class="portfolio-results" id="portfolio-results">
+                <div class="no-data">Enter your capital and click Generate to get your portfolio</div>
+            </div>
+        </section>
+
+        <!-- Position Calculator -->
+        <section class="calculator-section">
+            <h2>💰 Position Calculator</h2>
+            <div class="calculator-grid">
+                <div class="calc-input">
+                    <label>Account Size ($)</label>
+                    <input type="number" id="calc-account" value="10000" step="1000">
+                </div>
+                <div class="calc-input">
+                    <label>Entry Price ($)</label>
+                    <input type="number" id="calc-entry" value="100" step="0.01">
+                </div>
+                <div class="calc-input">
+                    <label>Stop Loss ($)</label>
+                    <input type="number" id="calc-stop" value="97" step="0.01">
+                </div>
+                <div class="calc-input">
+                    <label>Risk (%)</label>
+                    <input type="number" id="calc-risk" value="2" step="0.5">
+                </div>
+                <button class="btn btn-calculate" onclick="calculatePosition()">Calculate</button>
+                <div class="calc-result" id="calc-result">
+                    <div class="result-item">
+                        <span>Shares:</span>
+                        <strong id="result-shares">--</strong>
+                    </div>
+                    <div class="result-item">
+                        <span>Position:</span>
+                        <strong id="result-position">--</strong>
+                    </div>
+                    <div class="result-item">
+                        <span>Max Loss:</span>
+                        <strong id="result-loss">--</strong>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Stock Detail Modal -->
+        <div class="modal" id="stock-modal">
+            <div class="modal-content">
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+                <div class="modal-header">
+                    <h2 id="modal-symbol">AAPL</h2>
+                    <span id="modal-price" class="modal-price">$185.50</span>
+                </div>
+                <div class="modal-body" id="modal-body">
+                    Loading...
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="dashboard-footer">
+            <p>⚠️ <strong>Disclaimer:</strong> This is for educational purposes only. Trading involves significant risk.
+                Never trade money you can't afford to lose.</p>
+        </footer>
+    </div>
+
+    <script>
+        // Watchlist of stocks to scan
+        const WATCHLIST = [
+            'AAPL', 'TSLA', 'NVDA', 'AMD', 'META', 'GOOGL', 'AMZN', 'MSFT',
+            'NFLX', 'COIN', 'PLTR', 'SOFI', 'NIO', 'RIVN', 'BA', 'DIS',
+            'JPM', 'MARA', 'RIOT', 'HOOD', 'SNAP', 'UBER', 'PYPL', 'SQ'
+        ];
+
+        const INDICES = ['SPY', 'QQQ', 'IWM', 'DIA'];
+
+        // Stock data cache
+        let stockCache = {};
+
+        // Fetch stock data using Yahoo Finance API (via proxy)
+        async function fetchStockData(symbol) {
+            try {
+                // Using a CORS proxy for Yahoo Finance
+                const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1mo`;
+                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+
+                const response = await fetch(proxyUrl);
+                const data = await response.json();
+
+                if (!data.chart || !data.chart.result) return null;
+
+                const result = data.chart.result[0];
+                const meta = result.meta;
+                const quotes = result.indicators.quote[0];
+                const closes = quotes.close.filter(c => c !== null);
+                const volumes = quotes.volume.filter(v => v !== null);
+
+                const currentPrice = meta.regularMarketPrice;
+                const prevClose = meta.chartPreviousClose;
+                const changePercent = ((currentPrice - prevClose) / prevClose) * 100;
+
+                // Calculate RSI
+                const rsi = calculateRSI(closes);
+
+                // Calculate average volume
+                const avgVolume = volumes.slice(-20).reduce((a, b) => a + b, 0) / 20;
+                const volumeRatio = volumes[volumes.length - 1] / avgVolume;
+
+                // Calculate ATR
+                const highs = quotes.high.filter(h => h !== null);
+                const lows = quotes.low.filter(l => l !== null);
+                const atr = calculateATR(highs, lows, closes);
+                const atrPercent = (atr / currentPrice) * 100;
+
+                // Determine trend
+                const ema9 = calculateEMA(closes, 9);
+                const ema20 = calculateEMA(closes, 20);
+                let trend = 'sideways';
+                if (currentPrice > ema9 && ema9 > ema20) trend = 'strong_uptrend';
+                else if (currentPrice > ema20) trend = 'uptrend';
+                else if (currentPrice < ema9 && ema9 < ema20) trend = 'strong_downtrend';
+                else if (currentPrice < ema20) trend = 'downtrend';
+
+                // MACD
+                const macd = calculateMACD(closes);
+
+                return {
+                    symbol: symbol,
+                    price: currentPrice.toFixed(2),
+                    change_percent: changePercent.toFixed(2),
+                    volume_ratio: volumeRatio.toFixed(2),
+                    rsi: rsi.toFixed(1),
+                    macd_signal: macd,
+                    atr_percent: atrPercent.toFixed(2),
+                    trend: trend,
+                    day_high: meta.regularMarketDayHigh?.toFixed(2) || currentPrice.toFixed(2),
+                    day_low: meta.regularMarketDayLow?.toFixed(2) || currentPrice.toFixed(2)
+                };
+            } catch (error) {
+                console.error(`Error fetching ${symbol}:`, error);
+                return null;
+            }
+        }
+
+        // Calculate RSI
+        function calculateRSI(prices, period = 14) {
+            if (prices.length < period + 1) return 50;
+
+            let gains = 0, losses = 0;
+
+            for (let i = prices.length - period; i < prices.length; i++) {
+                const change = prices[i] - prices[i - 1];
+                if (change > 0) gains += change;
+                else losses -= change;
+            }
+
+            const avgGain = gains / period;
+            const avgLoss = losses / period;
+
+            if (avgLoss === 0) return 100;
+            const rs = avgGain / avgLoss;
+            return 100 - (100 / (1 + rs));
+        }
+
+        // Calculate EMA
+        function calculateEMA(prices, period) {
+            const k = 2 / (period + 1);
+            let ema = prices.slice(0, period).reduce((a, b) => a + b, 0) / period;
+
+            for (let i = period; i < prices.length; i++) {
+                ema = prices[i] * k + ema * (1 - k);
+            }
+            return ema;
+        }
+
+        // Calculate MACD
+        function calculateMACD(prices) {
+            if (prices.length < 26) return 'neutral';
+            const ema12 = calculateEMA(prices, 12);
+            const ema26 = calculateEMA(prices, 26);
+            const macd = ema12 - ema26;
+
+            // Simplified signal
+            const prevEma12 = calculateEMA(prices.slice(0, -1), 12);
+            const prevEma26 = calculateEMA(prices.slice(0, -1), 26);
+            const prevMacd = prevEma12 - prevEma26;
+
+            return macd > prevMacd ? 'bullish' : 'bearish';
+        }
+
+        // Calculate ATR
+        function calculateATR(highs, lows, closes, period = 14) {
+            if (highs.length < period) return 0;
+
+            let tr = 0;
+            for (let i = highs.length - period; i < highs.length; i++) {
+                const highLow = highs[i] - lows[i];
+                tr += highLow;
+            }
+            return tr / period;
+        }
+
+        // Generate trading signal
+        function generateSignal(stockData) {
+            if (!stockData) return null;
+
+            const price = parseFloat(stockData.price);
+            const rsi = parseFloat(stockData.rsi);
+            const atrPercent = parseFloat(stockData.atr_percent);
+
+            // Calculate score
+            let score = 50;
+
+            if (rsi > 60 && rsi < 80) score += 15;
+            else if (rsi > 50) score += 10;
+            else if (rsi < 40 && rsi > 20) score += 10;
+
+            if (stockData.macd_signal === 'bullish') score += 10;
+            else score -= 5;
+
+            if (stockData.trend === 'strong_uptrend') score += 15;
+            else if (stockData.trend === 'uptrend') score += 10;
+            else if (stockData.trend === 'strong_downtrend') score -= 10;
+
+            if (parseFloat(stockData.volume_ratio) > 2) score += 10;
+            else if (parseFloat(stockData.volume_ratio) > 1.5) score += 5;
+
+            if (Math.abs(parseFloat(stockData.change_percent)) > 5) score += 10;
+
+            score = Math.min(100, Math.max(0, score));
+
+            // Determine signal type and levels
+            let signal_type, target, stop_loss;
+
+            if (score >= 80 && ['strong_uptrend', 'uptrend'].includes(stockData.trend)) {
+                signal_type = 'STRONG_BUY';
+                target = price * 1.10;
+                stop_loss = price * 0.95;
+            } else if (score >= 65 && stockData.macd_signal === 'bullish') {
+                signal_type = 'BUY';
+                target = price * 1.06;
+                stop_loss = price * 0.97;
+            } else if (score >= 50) {
+                signal_type = 'WATCH_LONG';
+                target = price * (1 + (atrPercent * 2 / 100));
+                stop_loss = price * (1 - (atrPercent * 1.5 / 100));
+            } else {
+                signal_type = 'NEUTRAL';
+                target = price * (1 + (atrPercent * 2 / 100));
+                stop_loss = price * (1 - (atrPercent * 1.5 / 100));
+            }
+
+            const riskReward = Math.abs(target - price) / Math.abs(price - stop_loss);
+
+            return {
+                symbol: stockData.symbol,
+                signal: signal_type,
+                score: score,
+                entry: price.toFixed(2),
+                target: target.toFixed(2),
+                stop_loss: stop_loss.toFixed(2),
+                risk_reward: riskReward.toFixed(2)
+            };
+        }
+
+        // Load market overview
+        async function loadMarketOverview() {
+            const container = document.getElementById('market-cards');
+            container.innerHTML = '<div class="market-card loading">Loading indices...</div>';
+
+            const cards = [];
+            for (const symbol of INDICES) {
+                const data = await fetchStockData(symbol);
+                if (data) {
+                    stockCache[symbol] = data;
+                    const isBullish = parseFloat(data.change_percent) >= 0;
+                    cards.push(`
+                        <div class="market-card ${isBullish ? 'bullish' : 'bearish'}">
+                            <div class="market-symbol">${symbol}</div>
+                            <div class="market-price">$${data.price}</div>
+                            <div class="market-change ${isBullish ? 'up' : 'down'}">
+                                ${isBullish ? '▲' : '▼'} ${Math.abs(parseFloat(data.change_percent)).toFixed(2)}%
+                            </div>
+                        </div>
+                    `);
+                }
+            }
+
+            // VIX placeholder (can add real VIX later)
+            cards.push(`
+                <div class="market-card">
+                    <div class="market-symbol">VIX</div>
+                    <div class="market-price">~20</div>
+                    <div class="market-interp">Normal</div>
+                </div>
+            `);
+
+            container.innerHTML = cards.join('');
+
+            // Update market status
+            const spy = stockCache['SPY'];
+            if (spy) {
+                const isBullish = parseFloat(spy.change_percent) >= 0;
+                document.getElementById('market-status').innerHTML = `
+                    <span class="status-dot ${isBullish ? 'green' : 'red'}"></span>
+                    <span>Market ${isBullish ? 'Bullish' : 'Bearish'} (SPY ${parseFloat(spy.change_percent) >= 0 ? '+' : ''}${spy.change_percent}%)</span>
+                `;
+            }
+        }
+
+        // Load recommendations
+        async function loadRecommendations() {
+            const container = document.getElementById('recommendations-list');
+            container.innerHTML = '<div class="loading-spinner">Scanning for opportunities...</div>';
+
+            const recommendations = [];
+
+            // Scan top 10 stocks
+            for (const symbol of WATCHLIST.slice(0, 10)) {
+                const data = await fetchStockData(symbol);
+                if (data) {
+                    stockCache[symbol] = data;
+                    const signal = generateSignal(data);
+                    if (signal && ['STRONG_BUY', 'BUY'].includes(signal.signal)) {
+                        recommendations.push({ technical: data, signal: signal });
+                    }
+                }
+            }
+
+            recommendations.sort((a, b) => b.signal.score - a.signal.score);
+
+            if (recommendations.length > 0) {
+                container.innerHTML = recommendations.slice(0, 5).map(rec => {
+                    const signal = rec.signal;
+                    const tech = rec.technical;
+                    return `
+                        <div class="recommendation-card buy" onclick="showStockDetail('${tech.symbol}')">
+                            <div class="rec-header">
+                                <span class="rec-symbol">${tech.symbol}</span>
+                                <span class="rec-signal buy">${signal.signal}</span>
+                            </div>
+                            <div class="rec-price">
+                                <span class="current-price">$${tech.price}</span>
+                                <span class="price-change ${parseFloat(tech.change_percent) >= 0 ? 'up' : 'down'}">
+                                    ${parseFloat(tech.change_percent) >= 0 ? '+' : ''}${tech.change_percent}%
+                                </span>
+                            </div>
+                            <div class="rec-levels">
+                                <div class="level entry"><span>Entry</span><strong>$${signal.entry}</strong></div>
+                                <div class="level target"><span>Target</span><strong>$${signal.target}</strong></div>
+                                <div class="level stop"><span>Stop</span><strong>$${signal.stop_loss}</strong></div>
+                            </div>
+                            <div class="rec-stats">
+                                <span>RSI: ${tech.rsi}</span>
+                                <span>Vol: ${tech.volume_ratio}x</span>
+                                <span>R/R: ${signal.risk_reward}</span>
+                            </div>
+                            <div class="rec-confidence">Score: ${signal.score}/100</div>
+                        </div>
+                    `;
+                }).join('');
+            } else {
+                container.innerHTML = '<div class="no-data">No strong signals right now. Check back later.</div>';
+            }
+        }
+
+        // Scan stocks
+        async function scanStocks() {
+            const minChange = parseFloat(document.getElementById('min-change').value);
+            const minVolume = parseFloat(document.getElementById('min-volume').value);
+            const container = document.getElementById('scanner-results');
+            container.innerHTML = '<div class="loading-spinner">Scanning...</div>';
+
+            const results = [];
+
+            for (const symbol of WATCHLIST) {
+                let data = stockCache[symbol];
+                if (!data) {
+                    data = await fetchStockData(symbol);
+                    if (data) stockCache[symbol] = data;
+                }
+
+                if (data) {
+                    const change = Math.abs(parseFloat(data.change_percent));
+                    const volume = parseFloat(data.volume_ratio);
+
+                    if (change >= minChange && volume >= minVolume) {
+                        results.push(data);
+                    }
+                }
+            }
+
+            results.sort((a, b) => Math.abs(parseFloat(b.change_percent)) - Math.abs(parseFloat(a.change_percent)));
+
+            if (results.length > 0) {
+                container.innerHTML = `
+                    <table class="scanner-table">
+                        <thead>
+                            <tr><th>Symbol</th><th>Price</th><th>Change</th><th>Volume</th><th>RSI</th><th>Trend</th></tr>
+                        </thead>
+                        <tbody>
+                            ${results.map(stock => `
+                                <tr onclick="showStockDetail('${stock.symbol}')" class="clickable">
+                                    <td><strong>${stock.symbol}</strong></td>
+                                    <td>$${stock.price}</td>
+                                    <td class="${parseFloat(stock.change_percent) >= 0 ? 'up' : 'down'}">${stock.change_percent}%</td>
+                                    <td>${stock.volume_ratio}x</td>
+                                    <td>${stock.rsi}</td>
+                                    <td>${stock.trend.replace('_', ' ')}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+            } else {
+                container.innerHTML = '<div class="no-data">No stocks match criteria</div>';
+            }
+        }
+
+        // Generate portfolio
+        async function generatePortfolio() {
+            const capital = parseFloat(document.getElementById('portfolio-capital').value);
+            const maxPositions = parseInt(document.getElementById('portfolio-max-positions').value);
+            const container = document.getElementById('portfolio-results');
+            container.innerHTML = '<div class="loading-spinner">Analyzing and generating portfolio...</div>';
+
+            const allSignals = [];
+
+            for (const symbol of WATCHLIST.slice(0, 15)) {
+                let data = stockCache[symbol];
+                if (!data) {
+                    data = await fetchStockData(symbol);
+                    if (data) stockCache[symbol] = data;
+                }
+
+                if (data) {
+                    const signal = generateSignal(data);
+                    if (signal && ['STRONG_BUY', 'BUY', 'WATCH_LONG'].includes(signal.signal) && signal.score >= 50) {
+                        allSignals.push({ stock: data, signal: signal });
+                    }
+                }
+            }
+
+            allSignals.sort((a, b) => b.signal.score - a.signal.score);
+            const selected = allSignals.slice(0, maxPositions);
+
+            if (selected.length === 0) {
+                container.innerHTML = '<div class="no-data">No actionable opportunities found.</div>';
+                return;
+            }
+
+            const totalScore = selected.reduce((sum, s) => sum + s.signal.score, 0);
+            const positions = [];
+            let remaining = capital;
+
+            for (let i = 0; i < selected.length; i++) {
+                const { stock, signal } = selected[i];
+                const weight = signal.score / totalScore;
+                const allocated = i < selected.length - 1 ? remaining * weight : remaining;
+
+                const price = parseFloat(stock.price);
+                const shares = Math.floor(allocated / price);
+                const value = shares * price;
+
+                if (shares > 0) {
+                    const risk = Math.abs(parseFloat(signal.entry) - parseFloat(signal.stop_loss)) * shares;
+                    const profit = Math.abs(parseFloat(signal.target) - parseFloat(signal.entry)) * shares;
+
+                    positions.push({
+                        symbol: stock.symbol,
+                        signal: signal.signal,
+                        score: signal.score,
+                        shares: shares,
+                        value: value.toFixed(2),
+                        allocation: ((value / capital) * 100).toFixed(1),
+                        entry: signal.entry,
+                        target: signal.target,
+                        stop_loss: signal.stop_loss,
+                        potential_profit: profit.toFixed(2),
+                        max_loss: risk.toFixed(2)
+                    });
+                    remaining -= value;
+                }
+            }
+
+            const totalAllocated = positions.reduce((sum, p) => sum + parseFloat(p.value), 0);
+            const totalProfit = positions.reduce((sum, p) => sum + parseFloat(p.potential_profit), 0);
+            const totalRisk = positions.reduce((sum, p) => sum + parseFloat(p.max_loss), 0);
+
+            container.innerHTML = `
+                <div class="portfolio-summary">
+                    <div class="summary-item"><span>Total Capital</span><strong>$${capital.toLocaleString()}</strong></div>
+                    <div class="summary-item"><span>Allocated</span><strong>$${totalAllocated.toLocaleString()}</strong></div>
+                    <div class="summary-item"><span>Cash Reserve</span><strong>$${remaining.toFixed(2)}</strong></div>
+                    <div class="summary-item highlight-green"><span>Potential Profit</span><strong>+$${totalProfit.toFixed(0)}</strong></div>
+                    <div class="summary-item highlight-red"><span>Max Risk</span><strong>-$${totalRisk.toFixed(0)}</strong></div>
+                    <div class="summary-item"><span>Portfolio R/R</span><strong>${(totalProfit / totalRisk).toFixed(1)}:1</strong></div>
+                </div>
+                <div class="portfolio-positions">
+                    ${positions.map((pos, i) => `
+                        <div class="portfolio-position" onclick="showStockDetail('${pos.symbol}')">
+                            <div class="position-header">
+                                <span class="position-rank">#${i + 1}</span>
+                                <span class="position-symbol">${pos.symbol}</span>
+                                <span class="position-signal ${pos.signal.includes('BUY') ? 'buy' : 'neutral'}">${pos.signal}</span>
+                                <span class="position-allocation">${pos.allocation}%</span>
+                            </div>
+                            <div class="position-details">
+                                <div class="position-capital">
+                                    <span>Investment</span>
+                                    <strong>$${parseFloat(pos.value).toLocaleString()}</strong>
+                                    <small>${pos.shares} shares</small>
+                                </div>
+                                <div class="position-levels">
+                                    <div class="mini-level entry"><span>Entry</span><strong>$${pos.entry}</strong></div>
+                                    <div class="mini-level target"><span>Target</span><strong>$${pos.target}</strong></div>
+                                    <div class="mini-level stop"><span>Stop</span><strong>$${pos.stop_loss}</strong></div>
+                                </div>
+                                <div class="position-pnl">
+                                    <div class="pnl-item up"><span>Profit</span><strong>+$${pos.potential_profit}</strong></div>
+                                    <div class="pnl-item down"><span>Risk</span><strong>-$${pos.max_loss}</strong></div>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        // Show stock detail modal
+        async function showStockDetail(symbol) {
+            const modal = document.getElementById('stock-modal');
+            const body = document.getElementById('modal-body');
+
+            document.getElementById('modal-symbol').textContent = symbol;
+            body.innerHTML = '<div class="loading-spinner">Loading analysis...</div>';
+            modal.classList.add('active');
+
+            let data = stockCache[symbol];
+            if (!data) {
+                data = await fetchStockData(symbol);
+                if (data) stockCache[symbol] = data;
+            }
+
+            if (data) {
+                const signal = generateSignal(data);
+
+                document.getElementById('modal-price').innerHTML = `
+                    $${data.price}
+                    <span class="${parseFloat(data.change_percent) >= 0 ? 'up' : 'down'}">
+                        (${parseFloat(data.change_percent) >= 0 ? '+' : ''}${data.change_percent}%)
+                    </span>
+                `;
+
+                body.innerHTML = `
+                    <div class="detail-signal ${signal.signal.includes('BUY') ? 'buy' : 'neutral'}">
+                        <h3>${signal.signal}</h3>
+                        <span>Score: ${signal.score}/100</span>
+                    </div>
+                    
+                    <div class="detail-levels">
+                        <div class="level-card entry"><span>Entry</span><strong>$${signal.entry}</strong></div>
+                        <div class="level-card target"><span>Target</span><strong>$${signal.target}</strong><small>+${(((parseFloat(signal.target) - parseFloat(signal.entry)) / parseFloat(signal.entry)) * 100).toFixed(1)}%</small></div>
+                        <div class="level-card stop"><span>Stop Loss</span><strong>$${signal.stop_loss}</strong><small>${(((parseFloat(signal.stop_loss) - parseFloat(signal.entry)) / parseFloat(signal.entry)) * 100).toFixed(1)}%</small></div>
+                    </div>
+                    
+                    <div class="detail-technicals">
+                        <h4>Technical Indicators</h4>
+                        <div class="tech-grid">
+                            <div class="tech-item"><span>RSI</span><strong>${data.rsi}</strong></div>
+                            <div class="tech-item"><span>MACD</span><strong class="${data.macd_signal}">${data.macd_signal}</strong></div>
+                            <div class="tech-item"><span>Volume</span><strong>${data.volume_ratio}x avg</strong></div>
+                            <div class="tech-item"><span>Trend</span><strong>${data.trend.replace('_', ' ')}</strong></div>
+                            <div class="tech-item"><span>ATR</span><strong>${data.atr_percent}%</strong></div>
+                            <div class="tech-item"><span>Day Range</span><strong>$${data.day_low} - $${data.day_high}</strong></div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('stock-modal').classList.remove('active');
+        }
+
+        // Position calculator
+        function calculatePosition() {
+            const account = parseFloat(document.getElementById('calc-account').value);
+            const entry = parseFloat(document.getElementById('calc-entry').value);
+            const stop = parseFloat(document.getElementById('calc-stop').value);
+            const riskPercent = parseFloat(document.getElementById('calc-risk').value) / 100;
+
+            const riskAmount = account * riskPercent;
+            const riskPerShare = Math.abs(entry - stop);
+            const shares = Math.floor(riskAmount / riskPerShare);
+            const position = shares * entry;
+            const maxLoss = shares * riskPerShare;
+
+            document.getElementById('result-shares').textContent = shares;
+            document.getElementById('result-position').textContent = '$' + position.toFixed(2);
+            document.getElementById('result-loss').textContent = '$' + maxLoss.toFixed(2);
+        }
+
+        // Refresh all
+        function refreshAll() {
+            stockCache = {};
+            loadMarketOverview();
+            loadRecommendations();
+            document.getElementById('last-update').textContent = 'Last update: ' + new Date().toLocaleTimeString();
+        }
+
+        // Close modal on escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadMarketOverview();
+            loadRecommendations();
+            document.getElementById('last-update').textContent = 'Last update: ' + new Date().toLocaleTimeString();
+        });
+    </script>
+</body>
+
+</html>
