@@ -381,7 +381,8 @@
             const storedUser = localStorage.getItem('ironProgressUser');
             if (storedUser) {
                 const user = JSON.parse(storedUser);
-                const uniqueId = user.uid || user.email || 'anonymous';
+                // Prioritize email for consistent storage across sessions
+                const uniqueId = user.email || user.uid || 'anonymous';
                 return `${baseKey}_${uniqueId}`;
             }
             return `${baseKey}_anonymous`;

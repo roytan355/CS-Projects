@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📈 Day Trading Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://unpkg.com/lightweight-charts@4.0.1/dist/lightweight-charts.standalone.production.js"></script>
+</head>
+
+<body>
+    <div class="dashboard">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="logo">
+                <span class="logo-icon">📈</span>
+                <h1>Day Trading Dashboard</h1>
+            </div>
+            <div class="market-status" id="market-status">
+                <span class="status-dot"></span>
+                <span>Loading market status...</span>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-refresh" onclick="refreshAll()">🔄 Refresh</button>
+                <span class="last-update" id="last-update">--</span>
+            </div>
+        </header>
+
+        <!-- Market Overview -->
+        <section class="market-overview">
+            <h2>📊 Market Overview</h2>
+            <div class="market-cards" id="market-cards">
+                <div class="market-card loading">Loading...</div>
+            </div>
+        </section>
+
+        <!-- Main Content Grid -->
+        <div class="main-grid">
+            <!-- Today's Recommendations -->
+            <section class="recommendations-panel">
+                <h2>🎯 Today's Top Picks</h2>
+                <p class="panel-subtitle">AI-powered aggressive day trading opportunities</p>
+                <div class="recommendations-list" id="recommendations-list">
+                    <div class="loading-spinner">Scanning for opportunities...</div>
+                </div>
+            </section>
+
+            <!-- Stock Scanner -->
+            <section class="scanner-panel">
+                <h2>🔍 Momentum Scanner</h2>
+                <div class="scanner-filters">
+                    <label>Min Change: <input type="number" id="min-change" value="2" step="0.5">%</label>
+                    <label>Min Volume: <input type="number" id="min-volume" value="1.3" step="0.1">x</label>
+                    <button class="btn btn-scan" onclick="scanStocks()">Scan</button>
+                </div>
+                <div class="scanner-results" id="scanner-results">
+                    <div class="loading-spinner">Waiting for scan...</div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Stock Detail Modal -->
+        <div class="modal" id="stock-modal">
+            <div class="modal-content">
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+                <div class="modal-header">
+                    <h2 id="modal-symbol">AAPL</h2>
+                    <span id="modal-price" class="modal-price">$185.50</span>
+                </div>
+                <div class="modal-body" id="modal-body">
+                    Loading...
+                </div>
+            </div>
+        </div>
+
+        <!-- Position Calculator -->
+        <section class="calculator-section">
+            <h2>💰 Position Calculator</h2>
+            <div class="calculator-grid">
+                <div class="calc-input">
+                    <label>Account Size ($)</label>
+                    <input type="number" id="calc-account" value="10000" step="1000">
+                </div>
+                <div class="calc-input">
+                    <label>Entry Price ($)</label>
+                    <input type="number" id="calc-entry" value="100" step="0.01">
+                </div>
+                <div class="calc-input">
+                    <label>Stop Loss ($)</label>
+                    <input type="number" id="calc-stop" value="97" step="0.01">
+                </div>
+                <div class="calc-input">
+                    <label>Risk (%)</label>
+                    <input type="number" id="calc-risk" value="2" step="0.5">
+                </div>
+                <button class="btn btn-calculate" onclick="calculatePosition()">Calculate</button>
+                <div class="calc-result" id="calc-result">
+                    <div class="result-item">
+                        <span>Shares:</span>
+                        <strong id="result-shares">--</strong>
+                    </div>
+                    <div class="result-item">
+                        <span>Position:</span>
+                        <strong id="result-position">--</strong>
+                    </div>
+                    <div class="result-item">
+                        <span>Max Loss:</span>
+                        <strong id="result-loss">--</strong>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Watchlist -->
+        <section class="watchlist-section">
+            <h2>👀 Watchlist</h2>
+            <div class="watchlist-grid" id="watchlist-grid">
+                <div class="loading-spinner">Loading watchlist...</div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="dashboard-footer">
+            <p>⚠️ <strong>Disclaimer:</strong> This is for educational purposes only. Trading involves significant risk.
+                Never trade money you can't afford to lose.</p>
+        </footer>
+    </div>
+
+    <script>
+        // API base URL
+        const API = '';
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', () => {
+            loadMarketOverview();
+            loadRecommendations();
+            loadWatchlist();
+            updateLastRefresh();
+        });
+
+        // Load market overview
+        async function loadMarketOverview() {
+            try {
+                const res = await fetch(`${API}/api/market-overview`);
+                const data = await res.json();
+
+                if (data.success) {
+                    renderMarketCards(data.data);
+                    updateMarketStatus(data.data);
+                }
+            } catch (err) {
+                console.error('Market overview error:', err);
+            }
+        }
+
+        function renderMarketCards(indices) {
+            const container = document.getElementById('market-cards');
+            container.innerHTML = indices.map(idx => `
+                <div class="market-card ${idx.change_percent >= 0 ? 'bullish' : 'bearish'}">
+                    <div class="market-symbol">${idx.symbol}</div>
+                    <div class="market-price">$${idx.price}</div>
+                    <div class="market-change ${idx.change_percent >= 0 ? 'up' : 'down'}">
+                        ${idx.change_percent >= 0 ? '▲' : '▼'} ${Math.abs(idx.change_percent).toFixed(2)}%
+                    </div>
+                    ${idx.interpretation ? `<div class="market-interp">${idx.interpretation}</div>` : ''}
+                </div>
+            `).join('');
+        }
+
+        function updateMarketStatus(indices) {
+            const spy = indices.find(i => i.symbol === 'SPY');
+            const statusEl = document.getElementById('market-status');
+
+            if (spy) {
+                const isBullish = spy.change_percent >= 0;
+                statusEl.innerHTML = `
+                    <span class="status-dot ${isBullish ? 'green' : 'red'}"></span>
+                    <span>Market ${isBullish ? 'Bullish' : 'Bearish'} (SPY ${spy.change_percent >= 0 ? '+' : ''}${spy.change_percent.toFixed(2)}%)</span>
+                `;
+            }
+        }
+
+        // Load recommendations
+        async function loadRecommendations() {
+            const container = document.getElementById('recommendations-list');
+            container.innerHTML = '<div class="loading-spinner">Scanning for opportunities...</div>';
+
+            try {
+                const res = await fetch(`${API}/api/recommendations`);
+                const data = await res.json();
+
+                if (data.success && data.data.length > 0) {
+                    renderRecommendations(data.data);
+                } else {
+                    container.innerHTML = '<div class="no-data">No strong signals right now. Check back later.</div>';
+                }
+            } catch (err) {
+                container.innerHTML = '<div class="error">Error loading recommendations</div>';
+                console.error('Recommendations error:', err);
+            }
+        }
+
+        function renderRecommendations(recs) {
+            const container = document.getElementById('recommendations-list');
+            container.innerHTML = recs.map(rec => {
+                const signal = rec.signal;
+                const tech = rec.technical;
+                const signalClass = signal.signal.includes('BUY') ? 'buy' : signal.signal.includes('SELL') ? 'sell' : 'neutral';
+
+                return `
+                    <div class="recommendation-card ${signalClass}" onclick="showStockDetail('${tech.symbol}')">
+                        <div class="rec-header">
+                            <span class="rec-symbol">${tech.symbol}</span>
+                            <span class="rec-signal ${signalClass}">${signal.signal}</span>
+                        </div>
+                        <div class="rec-price">
+                            <span class="current-price">$${tech.price}</span>
+                            <span class="price-change ${tech.change_percent >= 0 ? 'up' : 'down'}">
+                                ${tech.change_percent >= 0 ? '+' : ''}${tech.change_percent}%
+                            </span>
+                        </div>
+                        <div class="rec-levels">
+                            <div class="level entry">
+                                <span>Entry</span>
+                                <strong>$${signal.entry}</strong>
+                            </div>
+                            <div class="level target">
+                                <span>Target</span>
+                                <strong>$${signal.target}</strong>
+                            </div>
+                            <div class="level stop">
+                                <span>Stop</span>
+                                <strong>$${signal.stop_loss}</strong>
+                            </div>
+                        </div>
+                        <div class="rec-stats">
+                            <span>RSI: ${tech.rsi}</span>
+                            <span>Vol: ${tech.volume_ratio}x</span>
+                            <span>R/R: ${signal.risk_reward}</span>
+                        </div>
+                        <div class="rec-reasons">
+                            ${signal.reasons.slice(0, 3).join(' ')}
+                        </div>
+                        <div class="rec-confidence">
+                            Confidence: <strong>${signal.confidence}</strong> | Score: ${signal.score}/100
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Scan stocks
+        async function scanStocks() {
+            const minChange = document.getElementById('min-change').value;
+            const minVolume = document.getElementById('min-volume').value;
+            const container = document.getElementById('scanner-results');
+            container.innerHTML = '<div class="loading-spinner">Scanning...</div>';
+
+            try {
+                const res = await fetch(`${API}/api/scan-momentum?min_change=${minChange}&min_volume=${minVolume}`);
+                const data = await res.json();
+
+                if (data.success && data.data.length > 0) {
+                    renderScanResults(data.data);
+                } else {
+                    container.innerHTML = '<div class="no-data">No stocks match criteria</div>';
+                }
+            } catch (err) {
+                container.innerHTML = '<div class="error">Scan failed</div>';
+            }
+        }
+
+        function renderScanResults(stocks) {
+            const container = document.getElementById('scanner-results');
+            container.innerHTML = `
+                <table class="scanner-table">
+                    <thead>
+                        <tr>
+                            <th>Symbol</th>
+                            <th>Price</th>
+                            <th>Change</th>
+                            <th>Volume</th>
+                            <th>RSI</th>
+                            <th>Trend</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${stocks.map(stock => `
+                            <tr onclick="showStockDetail('${stock.symbol}')" class="clickable">
+                                <td><strong>${stock.symbol}</strong></td>
+                                <td>$${stock.price}</td>
+                                <td class="${stock.change_percent >= 0 ? 'up' : 'down'}">
+                                    ${stock.change_percent >= 0 ? '+' : ''}${stock.change_percent}%
+                                </td>
+                                <td>${stock.volume_ratio}x</td>
+                                <td>${stock.rsi}</td>
+                                <td>${stock.trend.replace('_', ' ')}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        // Stock detail modal
+        async function showStockDetail(symbol) {
+            const modal = document.getElementById('stock-modal');
+            const body = document.getElementById('modal-body');
+
+            document.getElementById('modal-symbol').textContent = symbol;
+            body.innerHTML = '<div class="loading-spinner">Loading analysis...</div>';
+            modal.classList.add('active');
+
+            try {
+                const res = await fetch(`${API}/api/analyze/${symbol}?news=true`);
+                const data = await res.json();
+
+                if (data.success) {
+                    renderStockDetail(data.data);
+                }
+            } catch (err) {
+                body.innerHTML = '<div class="error">Failed to load</div>';
+            }
+        }
+
+        function renderStockDetail(data) {
+            const tech = data.technical;
+            const signal = data.signal;
+            const body = document.getElementById('modal-body');
+
+            document.getElementById('modal-price').innerHTML = `
+                $${tech.price} 
+                <span class="${tech.change_percent >= 0 ? 'up' : 'down'}">
+                    (${tech.change_percent >= 0 ? '+' : ''}${tech.change_percent}%)
+                </span>
+            `;
+
+            body.innerHTML = `
+                <div class="detail-signal ${signal.signal.includes('BUY') ? 'buy' : signal.signal.includes('SELL') ? 'sell' : 'neutral'}">
+                    <h3>${signal.signal}</h3>
+                    <span>Confidence: ${signal.confidence} | Score: ${signal.score}/100</span>
+                </div>
+                
+                <div class="detail-levels">
+                    <div class="level-card entry">
+                        <span>Entry</span>
+                        <strong>$${signal.entry}</strong>
+                    </div>
+                    <div class="level-card target">
+                        <span>Target</span>
+                        <strong>$${signal.target}</strong>
+                        <small>${((signal.target - signal.entry) / signal.entry * 100).toFixed(1)}%</small>
+                    </div>
+                    <div class="level-card stop">
+                        <span>Stop Loss</span>
+                        <strong>$${signal.stop_loss}</strong>
+                        <small>${((signal.stop_loss - signal.entry) / signal.entry * 100).toFixed(1)}%</small>
+                    </div>
+                </div>
+                
+                <div class="detail-position">
+                    <h4>Position Sizing (2% risk)</h4>
+                    <div class="position-info">
+                        <span>Shares: <strong>${signal.position_size}</strong></span>
+                        <span>Value: <strong>$${signal.position_value}</strong></span>
+                        <span>Max Loss: <strong>$${signal.max_loss}</strong></span>
+                        <span>R/R Ratio: <strong>${signal.risk_reward}</strong></span>
+                    </div>
+                </div>
+                
+                <div class="detail-technicals">
+                    <h4>Technical Indicators</h4>
+                    <div class="tech-grid">
+                        <div class="tech-item">
+                            <span>RSI</span>
+                            <strong class="${tech.rsi > 70 ? 'overbought' : tech.rsi < 30 ? 'oversold' : ''}">${tech.rsi}</strong>
+                        </div>
+                        <div class="tech-item">
+                            <span>MACD</span>
+                            <strong class="${tech.macd_signal === 'bullish' ? 'bullish' : 'bearish'}">${tech.macd_signal}</strong>
+                        </div>
+                        <div class="tech-item">
+                            <span>Volume</span>
+                            <strong>${tech.volume_ratio}x avg</strong>
+                        </div>
+                        <div class="tech-item">
+                            <span>Trend</span>
+                            <strong>${tech.trend.replace('_', ' ')}</strong>
+                        </div>
+                        <div class="tech-item">
+                            <span>ATR</span>
+                            <strong>${tech.atr_percent}%</strong>
+                        </div>
+                        <div class="tech-item">
+                            <span>Day Range</span>
+                            <strong>$${tech.day_low} - $${tech.day_high}</strong>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="detail-reasons">
+                    <h4>Signal Reasons</h4>
+                    <ul>
+                        ${signal.reasons.map(r => `<li>${r}</li>`).join('')}
+                    </ul>
+                </div>
+                
+                ${data.news ? `
+                    <div class="detail-news">
+                        <h4>News Sentiment</h4>
+                        <div class="news-sentiment ${data.news.sentiment_analysis.sentiment}">
+                            <strong>${data.news.sentiment_analysis.sentiment.toUpperCase()}</strong>
+                            <span>Score: ${data.news.sentiment_analysis.sentiment_score}</span>
+                        </div>
+                        <p>${data.news.sentiment_analysis.key_catalyst}</p>
+                    </div>
+                ` : ''}
+            `;
+        }
+
+        function closeModal() {
+            document.getElementById('stock-modal').classList.remove('active');
+        }
+
+        // Position calculator
+        function calculatePosition() {
+            const account = parseFloat(document.getElementById('calc-account').value);
+            const entry = parseFloat(document.getElementById('calc-entry').value);
+            const stop = parseFloat(document.getElementById('calc-stop').value);
+            const riskPercent = parseFloat(document.getElementById('calc-risk').value) / 100;
+
+            const riskAmount = account * riskPercent;
+            const riskPerShare = Math.abs(entry - stop);
+            const shares = Math.floor(riskAmount / riskPerShare);
+            const position = shares * entry;
+            const maxLoss = shares * riskPerShare;
+
+            document.getElementById('result-shares').textContent = shares;
+            document.getElementById('result-position').textContent = '$' + position.toFixed(2);
+            document.getElementById('result-loss').textContent = '$' + maxLoss.toFixed(2);
+        }
+
+        // Load watchlist
+        async function loadWatchlist() {
+            const container = document.getElementById('watchlist-grid');
+
+            try {
+                const res = await fetch(`${API}/api/watchlist`);
+                const data = await res.json();
+
+                if (data.success) {
+                    renderWatchlist(data.data);
+                }
+            } catch (err) {
+                container.innerHTML = '<div class="error">Failed to load watchlist</div>';
+            }
+        }
+
+        function renderWatchlist(stocks) {
+            const container = document.getElementById('watchlist-grid');
+            container.innerHTML = stocks.map(stock => `
+                <div class="watchlist-item" onclick="showStockDetail('${stock.symbol}')">
+                    <div class="watch-symbol">${stock.symbol}</div>
+                    <div class="watch-price">$${stock.price}</div>
+                    <div class="watch-change ${stock.change_percent >= 0 ? 'up' : 'down'}">
+                        ${stock.change_percent >= 0 ? '+' : ''}${stock.change_percent}%
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Refresh all
+        function refreshAll() {
+            loadMarketOverview();
+            loadRecommendations();
+            loadWatchlist();
+            updateLastRefresh();
+        }
+
+        function updateLastRefresh() {
+            const now = new Date();
+            document.getElementById('last-update').textContent =
+                `Last update: ${now.toLocaleTimeString()}`;
+        }
+
+        // Close modal on escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
+        });
+    </script>
+</body>
+
+</html>
