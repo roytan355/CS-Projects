@@ -112,6 +112,26 @@
             </div>
         </section>
 
+        <!-- Portfolio Generator -->
+        <section class="portfolio-section">
+            <h2>🚀 Portfolio Generator</h2>
+            <p class="panel-subtitle">Enter your capital and get an AI-optimized diversified portfolio</p>
+            <div class="portfolio-input-grid">
+                <div class="calc-input">
+                    <label>Total Capital ($)</label>
+                    <input type="number" id="portfolio-capital" value="10000" step="1000">
+                </div>
+                <div class="calc-input">
+                    <label>Max Positions</label>
+                    <input type="number" id="portfolio-max-positions" value="5" min="1" max="10">
+                </div>
+                <button class="btn btn-generate" onclick="generatePortfolio()">🎯 Generate Portfolio</button>
+            </div>
+            <div class="portfolio-results" id="portfolio-results">
+                <div class="no-data">Enter your capital and click Generate to get your portfolio</div>
+            </div>
+        </section>
+
         <!-- Watchlist -->
         <section class="watchlist-section">
             <h2>👀 Watchlist</h2>
@@ -468,6 +488,116 @@
                     </div>
                 </div>
             `).join('');
+        }
+
+        // Generate portfolio
+        async function generatePortfolio() {
+            const capital = parseFloat(document.getElementById('portfolio-capital').value);
+            const maxPositions = parseInt(document.getElementById('portfolio-max-positions').value);
+            const container = document.getElementById('portfolio-results');
+
+            container.innerHTML = '<div class="loading-spinner">Analyzing market and generating optimal portfolio...</div>';
+
+            try {
+                const res = await fetch(`${API}/api/generate-portfolio`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ total_capital: capital, max_positions: maxPositions })
+                });
+                const data = await res.json();
+
+                if (data.success && data.data.positions && data.data.positions.length > 0) {
+                    renderPortfolio(data.data);
+                } else {
+                    container.innerHTML = '<div class="no-data">No actionable opportunities found. Try again later when market has more momentum.</div>';
+                }
+            } catch (err) {
+                container.innerHTML = '<div class="error">Failed to generate portfolio</div>';
+                console.error('Portfolio error:', err);
+            }
+        }
+
+        function renderPortfolio(portfolio) {
+            const container = document.getElementById('portfolio-results');
+            container.innerHTML = `
+                <div class="portfolio-summary">
+                    <div class="summary-item">
+                        <span>Total Capital</span>
+                        <strong>$${portfolio.total_capital.toLocaleString()}</strong>
+                    </div>
+                    <div class="summary-item">
+                        <span>Allocated</span>
+                        <strong>$${portfolio.total_allocated.toLocaleString()}</strong>
+                    </div>
+                    <div class="summary-item">
+                        <span>Cash Reserve</span>
+                        <strong>$${portfolio.cash_reserve.toLocaleString()}</strong>
+                    </div>
+                    <div class="summary-item highlight-green">
+                        <span>Potential Profit</span>
+                        <strong>+$${portfolio.total_potential_profit.toLocaleString()}</strong>
+                    </div>
+                    <div class="summary-item highlight-red">
+                        <span>Max Risk</span>
+                        <strong>-$${portfolio.total_max_loss.toLocaleString()}</strong>
+                    </div>
+                    <div class="summary-item">
+                        <span>Portfolio R/R</span>
+                        <strong>${portfolio.portfolio_risk_reward}:1</strong>
+                    </div>
+                </div>
+                
+                <div class="portfolio-positions">
+                    ${portfolio.positions.map((pos, i) => `
+                        <div class="portfolio-position" onclick="showStockDetail('${pos.symbol}')">
+                            <div class="position-header">
+                                <span class="position-rank">#${i + 1}</span>
+                                <span class="position-symbol">${pos.symbol}</span>
+                                <span class="position-signal ${pos.signal.includes('BUY') ? 'buy' : 'neutral'}">${pos.signal}</span>
+                                <span class="position-allocation">${pos.allocation_percent}%</span>
+                            </div>
+                            <div class="position-details">
+                                <div class="position-capital">
+                                    <span>Investment</span>
+                                    <strong>$${pos.allocated_capital.toLocaleString()}</strong>
+                                    <small>${pos.shares} shares</small>
+                                </div>
+                                <div class="position-levels">
+                                    <div class="mini-level entry">
+                                        <span>Entry</span>
+                                        <strong>$${pos.entry}</strong>
+                                    </div>
+                                    <div class="mini-level target">
+                                        <span>Target</span>
+                                        <strong>$${pos.target}</strong>
+                                    </div>
+                                    <div class="mini-level stop">
+                                        <span>Stop</span>
+                                        <strong>$${pos.stop_loss}</strong>
+                                    </div>
+                                </div>
+                                <div class="position-pnl">
+                                    <div class="pnl-item up">
+                                        <span>Profit</span>
+                                        <strong>+$${pos.potential_profit}</strong>
+                                    </div>
+                                    <div class="pnl-item down">
+                                        <span>Risk</span>
+                                        <strong>-$${pos.max_loss}</strong>
+                                    </div>
+                                    <div class="pnl-item">
+                                        <span>R/R</span>
+                                        <strong>${pos.risk_reward}</strong>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="position-reasons">
+                                ${pos.reasons.join(' ')}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
         }
 
         // Refresh all

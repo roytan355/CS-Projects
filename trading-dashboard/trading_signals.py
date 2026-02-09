@@ -56,9 +56,15 @@ class TradingSignals:
                 target = price * 0.94
                 stop_loss = price * 1.03
         else:
+            # For WATCH and NEUTRAL signals, still calculate levels based on ATR
             entry = price
-            target = price
-            stop_loss = price
+            # Use ATR-based levels for potential breakout
+            if signal_type in ['WATCH_LONG', 'NEUTRAL']:
+                target = price * (1 + (atr_percent * 2 / 100))  # 2x ATR upside
+                stop_loss = price * (1 - (atr_percent * 1.5 / 100))  # 1.5x ATR downside
+            else:  # WATCH_SHORT
+                target = price * (1 - (atr_percent * 2 / 100))  # 2x ATR downside
+                stop_loss = price * (1 + (atr_percent * 1.5 / 100))  # 1.5x ATR upside
         
         # Calculate position size
         position = self._calculate_position_size(entry, stop_loss)
@@ -206,6 +212,104 @@ class TradingSignals:
                 reasons.append(f"🔻 Down {data['change_percent']}% today")
         
         return reasons if reasons else ['No strong signals']
+    
+    def generate_portfolio(self, stock_signals, total_capital, max_positions=5):
+        """
+        Generate optimally diversified portfolio allocation
+        
+        Args:
+            stock_signals: List of (stock_data, signal) tuples from scanner
+            total_capital: Total amount to invest
+            max_positions: Maximum number of positions (default 5)
+        
+        Returns:
+            Portfolio allocation with entry/target/stop for each position
+        """
+        if not stock_signals or total_capital <= 0:
+            return {'error': 'No signals or invalid capital', 'positions': []}
+        
+        # Filter for actionable signals and sort by score
+        actionable = [
+            (stock, signal) for stock, signal in stock_signals
+            if signal and signal['signal'] in ['STRONG_BUY', 'BUY', 'WATCH_LONG']
+            and signal['score'] >= 50
+        ]
+        
+        if not actionable:
+            return {'error': 'No actionable signals found', 'positions': []}
+        
+        # Sort by score (best first)
+        actionable.sort(key=lambda x: x[1]['score'], reverse=True)
+        
+        # Limit to max positions
+        selected = actionable[:max_positions]
+        
+        # Calculate allocation weights based on score
+        total_score = sum(s[1]['score'] for s in selected)
+        
+        positions = []
+        remaining_capital = total_capital
+        
+        for i, (stock, signal) in enumerate(selected):
+            # Weight by score (higher score = larger allocation)
+            weight = signal['score'] / total_score
+            
+            # Allocate capital (minimum $100 per position)
+            allocated = max(100, remaining_capital * weight)
+            
+            # Don't exceed remaining
+            if i == len(selected) - 1:
+                allocated = remaining_capital
+            else:
+                allocated = min(allocated, remaining_capital - (100 * (len(selected) - i - 1)))
+            
+            # Calculate shares
+            price = stock['price']
+            shares = int(allocated / price)
+            actual_value = shares * price
+            
+            if shares <= 0:
+                continue
+            
+            # Calculate risk/reward for this position
+            risk_per_share = abs(signal['entry'] - signal['stop_loss'])
+            potential_gain = abs(signal['target'] - signal['entry'])
+            
+            position = {
+                'symbol': stock['symbol'],
+                'signal': signal['signal'],
+                'score': signal['score'],
+                'confidence': signal['confidence'],
+                'allocation_percent': round((actual_value / total_capital) * 100, 1),
+                'allocated_capital': round(actual_value, 2),
+                'shares': shares,
+                'entry': signal['entry'],
+                'target': signal['target'],
+                'stop_loss': signal['stop_loss'],
+                'risk_reward': signal['risk_reward'],
+                'potential_profit': round(shares * potential_gain, 2),
+                'max_loss': round(shares * risk_per_share, 2),
+                'reasons': signal['reasons'][:3]  # Top 3 reasons
+            }
+            
+            positions.append(position)
+            remaining_capital -= actual_value
+        
+        # Calculate portfolio summary
+        total_allocated = sum(p['allocated_capital'] for p in positions)
+        total_potential_profit = sum(p['potential_profit'] for p in positions)
+        total_max_loss = sum(p['max_loss'] for p in positions)
+        
+        return {
+            'total_capital': total_capital,
+            'total_allocated': round(total_allocated, 2),
+            'cash_reserve': round(total_capital - total_allocated, 2),
+            'num_positions': len(positions),
+            'total_potential_profit': round(total_potential_profit, 2),
+            'total_max_loss': round(total_max_loss, 2),
+            'portfolio_risk_reward': round(total_potential_profit / total_max_loss, 2) if total_max_loss > 0 else 0,
+            'positions': positions
+        }
 
 
 if __name__ == '__main__':

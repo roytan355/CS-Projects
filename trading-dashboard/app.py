@@ -171,6 +171,36 @@ def get_watchlist():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@app.route('/api/generate-portfolio', methods=['POST'])
+def generate_portfolio():
+    """Generate optimal portfolio allocation based on total capital"""
+    try:
+        data = request.json
+        total_capital = float(data.get('total_capital', 10000))
+        max_positions = int(data.get('max_positions', 5))
+        
+        if total_capital <= 0:
+            return jsonify({'success': False, 'error': 'Invalid capital amount'}), 400
+        
+        # Scan for all potential stocks
+        all_stocks = []
+        for symbol in scanner.watchlist:
+            analysis = scanner.analyze_stock(symbol)
+            if analysis:
+                signal = signals.generate_signal(analysis)
+                if signal:
+                    all_stocks.append((analysis, signal))
+        
+        # Generate diversified portfolio
+        portfolio = signals.generate_portfolio(all_stocks, total_capital, max_positions)
+        
+        return jsonify({
+            'success': True,
+            'data': portfolio
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 
 if __name__ == '__main__':
     print("🚀 Starting Day Trading Dashboard...")
